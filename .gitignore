@@ -3,3 +3,5 @@
 *.pyc
 data/*
 download/*
+code/data/*
+code/download/*

@@ -100,7 +100,7 @@ def main(_):
     vocab, rev_vocab = initialize_vocab(vocab_path)
 
     encoder = Encoder(size=FLAGS.state_size, vocab_dim=FLAGS.embedding_size)
-    decoder = Decoder(output_size=FLAGS.output_size)
+    decoder = Decoder(output_size=FLAGS.output_size, hidden_size=FLAGS.state_size)
 
     qa = QASystem(encoder, decoder)
 

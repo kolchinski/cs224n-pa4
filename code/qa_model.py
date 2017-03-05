@@ -89,7 +89,11 @@ class Decoder(object):
         # now I need a final classification layer
         # result is a vector that represents all outputs
 
-        inner =
+        xav_init = tf.contrib.layers.xavier_initializer()
+        w = tf.get_variable("W_final", (self.hidden_size, 1), tf.float32, xav_init)
+        b = tf.get_variable("b_final", (1,), tf.float32, tf.constant_initializer(0.0))
+
+        inner = tf.matmul(word_res, w) + b
         word_res = tf.nn.sigmoid(inner)
         return  word_res
 
@@ -118,15 +122,14 @@ class QASystem(object):
 
         # ==== assemble pieces ====
         with tf.variable_scope("qa", initializer=tf.uniform_unit_scaling_initializer(1.0)):
-            self.setup_embeddings()
-            self.setup_system()
-            self.setup_loss()
+            embeds = self.setup_embeddings()
+            self.results = self.setup_system(embeds)
+            loss = self.setup_loss(self.results)
 
         # ==== set up training/updating procedure ====
-        pass
+        self.train_op = tf.train.AdamOptimizer(FLAGS.learning_rate).minimize(loss)
 
-
-    def setup_system(self):
+    def setup_system(self, embeds):
         """
         After your modularized implementation of encoder and decoder
         you should call various functions inside encoder, decoder here
@@ -134,17 +137,20 @@ class QASystem(object):
         :return:
         """
 
+        hidden_rep = self.encoder.encode(embeds)
+        res = self.decoder.decode(hidden_rep)
+        return res
 
-        raise NotImplementedError("Connect all parts of your system here!")
-
-
-    def setup_loss(self):
+    def setup_loss(self, final_res):
         """
         Set up your loss computation here
         :return:
         """
         with vs.variable_scope("loss"):
-
+            y = self.labels_placeholder
+            losses = tf.nn.l2_loss((final_res - y))
+            loss = tf.reduce_mean(losses)
+        return loss
 
     def setup_embeddings(self):
         """
@@ -157,7 +163,7 @@ class QASystem(object):
 
         embed_path = FLAGS.embed_path or os.path.join(
             "data", "squad", "glove.trimmed.{}.npz".format(FLAGS.embedding_size))
-        with open(embed_path) as f:
+        with open(embed_path, "b") as f:
             self.pretrained_embeddings = np.load(f)['glove']
 
         self.boundary_token = np.random.randn(FLAGS.embedding_size)
@@ -168,11 +174,10 @@ class QASystem(object):
         # We now need to set up the tensorflow emedding
 
         embed = tf.Variable(self.pretrained_embeddings)
-        extracted = tf.nn.embedding_lookup(embed, self.input_placeholder)
-        embeddings = tf.reshape(extracted, (-1, self.max_length, FLAGS.embed_size))
+        embeddings = tf.nn.embedding_lookup(embed, self.input_placeholder)
+        # embeddings = tf.reshape(extracted, (-1, self.max_length, FLAGS.embed_size))
         ### END YOUR CODE
         return embeddings
-
 
 
     def optimize(self, session, train_x, train_y):
@@ -182,12 +187,12 @@ class QASystem(object):
         :return:
         """
         input_feed = {}
-
+        input_feed['train_x'] = train_x
+        input_feed['train_y'] = train_y
         # fill in this feed_dictionary like:
         # input_feed['train_x'] = train_x
 
-        output_feed = []
-
+        output_feed = [self.results]
         outputs = session.run(output_feed, input_feed)
 
         return outputs
@@ -314,3 +319,12 @@ class QASystem(object):
         num_params = sum(map(lambda t: np.prod(tf.shape(t.value()).eval()), params))
         toc = time.time()
         logging.info("Number of params: %d (retreival took %f secs)" % (num_params, toc - tic))
+
+        #TODO: Batch up data, run loop over batches
+
+
+
+
+
+
+
