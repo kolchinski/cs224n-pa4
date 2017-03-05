@@ -76,12 +76,26 @@ def get_normalized_train_dir(train_dir):
     return global_train_dir
 
 
+def load_data_file(name):
+    with open(os.path.join(FLAGS.data_dir, 'train.ids.context')) as f:
+        return [[int(w) for w in l.strip().split()] for l in f.readlines()]
+
+
 def main(_):
 
     # Do what you need to load datasets from FLAGS.data_dir
-    dataset = None
+    print("Loading training data")
 
-    embed_path = FLAGS.embed_path or pjoin("data", "squad", "glove.trimmed.{}.npz".format(FLAGS.embedding_size))
+    os.chdir('..')
+
+    dataset = {}
+
+    dataset['train_contexts'] = load_data_file('train.ids.context')
+    dataset['train_questions'] = load_data_file('train.ids.question')
+    dataset['train_spans'] = load_data_file('train.ids.spans')
+
+    #embed_path = FLAGS.embed_path or pjoin("data", "squad", "glove.trimmed.{}.npz".format(FLAGS.embedding_size))
+
     vocab_path = FLAGS.vocab_path or pjoin(FLAGS.data_dir, "vocab.dat")
     vocab, rev_vocab = initialize_vocab(vocab_path)
 

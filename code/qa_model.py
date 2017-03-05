@@ -5,6 +5,7 @@ from __future__ import print_function
 import time
 import logging
 
+import os
 import numpy as np
 from six.moves import xrange  # pylint: disable=redefined-builtin
 import tensorflow as tf
@@ -13,6 +14,9 @@ from tensorflow.python.ops import variable_scope as vs
 from evaluate import exact_match_score, f1_score
 
 logging.basicConfig(level=logging.INFO)
+
+FLAGS = tf.app.flags.FLAGS
+
 
 
 def get_optimizer(opt):
@@ -44,7 +48,21 @@ class Encoder(object):
         :return: an encoded representation of your input.
                  It can be context-level representation, word-level representation,
                  or both.
+
+
+        Current implementation in progress: Feed in question, then token, then context
+
         """
+
+        cell = tf.nn.rnn_cell.LSTMCell(self.size, use_peepholes=False)
+
+        self.inputs_placeholder = tf.placeholder(tf.float32,
+                                                 (FLAGS.batch_size, FLAGS.embedding_size))
+
+
+
+        for input in inputs:
+
 
         return
 
@@ -60,6 +78,8 @@ class Decoder(object):
         all paragraph tokens on which token should be
         the start of the answer span, and which should be
         the end of the answer span.
+
+        FOR
 
         :param knowledge_rep: it is a representation of the paragraph and question,
                               decided by how you choose to implement the encoder
@@ -114,8 +134,15 @@ class QASystem(object):
         Loads distributed word representations based on placeholder tokens
         :return:
         """
-        with vs.variable_scope("embeddings"):
-            pass
+        #with vs.variable_scope("embeddings"):
+        #with open(os.path.join(FLAGS.data_dir, 'glove.trimmed.100.npz')) as f:
+        #self.pretrained_embeddings = np.load(f)
+
+        embed_path = FLAGS.embed_path or os.path.join(
+            "data", "squad", "glove.trimmed.{}.npz".format(FLAGS.embedding_size))
+        with open(embed_path) as f:
+            self.pretrained_embeddings = np.load(f)['glove']
+            self.boundary_token = np.random.randn(100)
 
     def optimize(self, session, train_x, train_y):
         """
