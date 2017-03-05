@@ -54,22 +54,17 @@ class Encoder(object):
 
         """
 
+        input_p = tf.placeholder(tf.float32, (FLAGS.batch_size, FLAGS.embedding_size))
+
         cell = tf.nn.rnn_cell.LSTMCell(self.size, use_peepholes=False)
-
-        self.inputs_placeholder = tf.placeholder(tf.float32,
-                                                 (FLAGS.batch_size, FLAGS.embedding_size))
-
-
-
-        for input in inputs:
-
-
-        return
+        word_res, f_state = tf.nn.dynamic_rnn(cell, input_p, initial_state=encoder_state_input)
+        return f_state, word_res
 
 
 class Decoder(object):
-    def __init__(self, output_size):
+    def __init__(self, output_size, hidden_size):
         self.output_size = output_size
+        self.hidden_size = hidden_size
 
     def decode(self, knowledge_rep):
         """
@@ -79,14 +74,26 @@ class Decoder(object):
         the start of the answer span, and which should be
         the end of the answer span.
 
-        FOR
+        We are just predicting: what is part of the answer span.
 
         :param knowledge_rep: it is a representation of the paragraph and question,
                               decided by how you choose to implement the encoder
         :return:
         """
 
-        return
+        encode_o, encode_s = knowledge_rep
+
+        cell = tf.nn.rnn_cell.LSTMCell(self.hidden_size, use_peepholes=False)
+        word_res, _ = tf.nn.dynamic_rnn(cell, encode_o, initial_state=encode_s)
+
+        # now I need a final classification layer
+        # result is a vector that represents all outputs
+
+        inner =
+        word_res = tf.nn.sigmoid(inner)
+        return  word_res
+
+
 
 class QASystem(object):
     def __init__(self, encoder, decoder, *args):
@@ -97,8 +104,16 @@ class QASystem(object):
         :param decoder: a decoder that you constructed in train.py
         :param args: pass in more arguments as needed
         """
+        self.encoder = encoder
+        self.decoder = decoder
+        self.max_length = 200
+
 
         # ==== set up placeholder tokens ========
+        self.input_placeholder = tf.placeholder(tf.int32, (None, self.max_length))
+        self.labels_placeholder = tf.placeholder(tf.float32, (None, self.max_length))
+        self.mask_placeholder = tf.placeholder(tf.bool, (None, self.max_length))
+        self.dropout_placeholder = tf.placeholder(tf.float32, ())
 
 
         # ==== assemble pieces ====
@@ -118,6 +133,8 @@ class QASystem(object):
         to assemble your reading comprehension system!
         :return:
         """
+
+
         raise NotImplementedError("Connect all parts of your system here!")
 
 
@@ -127,7 +144,7 @@ class QASystem(object):
         :return:
         """
         with vs.variable_scope("loss"):
-            pass
+
 
     def setup_embeddings(self):
         """
@@ -142,7 +159,21 @@ class QASystem(object):
             "data", "squad", "glove.trimmed.{}.npz".format(FLAGS.embedding_size))
         with open(embed_path) as f:
             self.pretrained_embeddings = np.load(f)['glove']
-            self.boundary_token = np.random.randn(100)
+
+        self.boundary_token = np.random.randn(FLAGS.embedding_size)
+        np.append(self.pretrained_embeddings, self.boundary_token)
+
+        self.boundary_token_index = len(self.boundary_token) - 1
+
+        # We now need to set up the tensorflow emedding
+
+        embed = tf.Variable(self.pretrained_embeddings)
+        extracted = tf.nn.embedding_lookup(embed, self.input_placeholder)
+        embeddings = tf.reshape(extracted, (-1, self.max_length, FLAGS.embed_size))
+        ### END YOUR CODE
+        return embeddings
+
+
 
     def optimize(self, session, train_x, train_y):
         """
