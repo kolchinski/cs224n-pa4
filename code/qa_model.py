@@ -34,7 +34,7 @@ class Encoder(object):
         self.size = size
         self.vocab_dim = vocab_dim
 
-    def encode(self, inputs, masks, encoder_state_input):
+    def encode(self, inputs, encoder_state_input):
         """
         In a generalized encode function, you pass in your inputs,
         masks, and an initial
@@ -54,10 +54,10 @@ class Encoder(object):
 
         """
 
-        input_p = tf.placeholder(tf.float32, (FLAGS.batch_size, FLAGS.embedding_size))
+        # input_p = tf.placeholder(tf.float32, (FLAGS.batch_size, FLAGS.embedding_size))
 
         cell = tf.nn.rnn_cell.LSTMCell(self.size, use_peepholes=False)
-        word_res, f_state = tf.nn.dynamic_rnn(cell, input_p, initial_state=encoder_state_input)
+        word_res, f_state = tf.nn.dynamic_rnn(cell, inputs, initial_state=encoder_state_input)
         return f_state, word_res
 
 
@@ -136,8 +136,8 @@ class QASystem(object):
         to assemble your reading comprehension system!
         :return:
         """
-
-        hidden_rep = self.encoder.encode(embeds)
+        initial_hidden = tf.placeholder(tf.float32, (self.encoder.vocab_dim,))
+        hidden_rep = self.encoder.encode(embeds, initial_hidden)
         res = self.decoder.decode(hidden_rep)
         return res
 
@@ -163,7 +163,7 @@ class QASystem(object):
 
         embed_path = FLAGS.embed_path or os.path.join(
             "data", "squad", "glove.trimmed.{}.npz".format(FLAGS.embedding_size))
-        with open(embed_path, "b") as f:
+        with open(embed_path, "rb") as f:
             self.pretrained_embeddings = np.load(f)['glove']
 
         self.boundary_token = np.random.randn(FLAGS.embedding_size)
