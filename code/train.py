@@ -32,6 +32,8 @@ tf.app.flags.DEFINE_integer("keep", 0, "How many checkpoints to keep, 0 indicate
 tf.app.flags.DEFINE_string("vocab_path", "data/squad/vocab.dat", "Path to vocab file (default: ./data/squad/vocab.dat)")
 tf.app.flags.DEFINE_string("embed_path", "", "Path to the trimmed GLoVe embedding (default: ./data/squad/glove.trimmed.{embedding_size}.npz)")
 
+tf.app.flags.DEFINE_string("max_length", 150, "Length of longest context we'll use")
+
 FLAGS = tf.app.flags.FLAGS
 
 

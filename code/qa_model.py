@@ -98,8 +98,11 @@ class Decoder(object):
         w = tf.get_variable("W_final", (self.hidden_size, 1), tf.float32, xav_init)
         b = tf.get_variable("b_final", (1,), tf.float32, tf.constant_initializer(0.0))
 
+        word_res = tf.reshape(word_res, [-1, FLAGS.state_size])
         inner = tf.matmul(word_res, w) + b
+        #inner = tf.einsum()
         word_res = tf.nn.sigmoid(inner)
+        word_res = tf.reshape(word_res, [-1, FLAGS.max_length])
         return  word_res
 
 
@@ -115,7 +118,7 @@ class QASystem(object):
         """
         self.encoder = encoder
         self.decoder = decoder
-        self.max_length = 150
+        self.max_length = FLAGS.max_length
 
 
         # ==== set up placeholder tokens ========
