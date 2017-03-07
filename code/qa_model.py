@@ -59,9 +59,9 @@ class Encoder(object):
         cell = tf.nn.rnn_cell.BasicLSTMCell(self.size)
         print(cell.state_size)
         #print(encoder_state_input.get_shape())
-        #word_res, f_state = tf.nn.dynamic_rnn(cell, inputs, dtype=tf.float32)
-        word_res, f_state = tf.nn.dynamic_rnn(cell, inputs,
-                            initial_state = encoder_state_input)
+        word_res, f_state = tf.nn.dynamic_rnn(cell, inputs, dtype=tf.float32)
+        #word_res, f_state = tf.nn.dynamic_rnn(cell, inputs,
+        #                    initial_state = encoder_state_input)
         return f_state, word_res
 
 
