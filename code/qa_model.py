@@ -56,12 +56,12 @@ class Encoder(object):
         """
 
         # input_p = tf.placeholder(tf.float32, (FLAGS.batch_size, FLAGS.embedding_size))
-
-        cell = tf.nn.rnn_cell.LSTMCell(self.size, use_peepholes=False)
-        print(cell)
-        print(inputs)
-        word_res, f_state = tf.nn.dynamic_rnn(cell, inputs, dtype=tf.float32)
-        #word_res, f_state = tf.nn.dynamic_rnn(cell, inputs, initial_state=encoder_state_input)
+        cell = tf.nn.rnn_cell.BasicLSTMCell(self.size)
+        print(cell.state_size)
+        #print(encoder_state_input.get_shape())
+        #word_res, f_state = tf.nn.dynamic_rnn(cell, inputs, dtype=tf.float32)
+        word_res, f_state = tf.nn.dynamic_rnn(cell, inputs,
+                            initial_state = encoder_state_input)
         return f_state, word_res
 
 
@@ -144,7 +144,9 @@ class QASystem(object):
         to assemble your reading comprehension system!
         :return:
         """
-        initial_hidden = tf.placeholder(tf.float32, (FLAGS.batch_size, FLAGS.state_size))
+        initial_hidden_c = tf.placeholder(tf.float32, (None, FLAGS.state_size))
+        initial_hidden_h = tf.placeholder(tf.float32, (None, FLAGS.state_size))
+        initial_hidden = tf.nn.rnn_cell.LSTMStateTuple(initial_hidden_c, initial_hidden_h)
         hidden_rep = self.encoder.encode(embeds, initial_hidden)
         res = self.decoder.decode(hidden_rep)
         return res
