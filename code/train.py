@@ -79,7 +79,7 @@ def get_normalized_train_dir(train_dir):
 
 
 def load_data_file(name):
-    with open(os.path.join(FLAGS.data_dir, 'train.ids.context')) as f:
+    with open(os.path.join(FLAGS.data_dir, name)) as f:
         return [[int(w) for w in l.strip().split()] for l in f.readlines()]
 
 
@@ -104,7 +104,7 @@ def main(_):
     dataset = {}
     dataset['train_contexts'] = load_data_file('train.ids.context')
     dataset['train_questions'] = load_data_file('train.ids.question')
-    dataset['train_spans'] = load_data_file('train.ids.spans')
+    dataset['train_spans'] = load_data_file('train.span')
 
     if not os.path.exists(FLAGS.log_dir):
         os.makedirs(FLAGS.log_dir)

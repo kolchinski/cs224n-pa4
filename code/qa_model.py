@@ -337,6 +337,7 @@ class QASystem(object):
         train_contexts = dataset['train_contexts']
         train_questions = dataset['train_questions']
         train_spans = dataset['train_spans']
+        print(train_spans[:2])
 
         train_seqs = map(lambda x,y: x +
                         [self.boundary_token] + y, train_contexts, train_questions)
@@ -360,9 +361,13 @@ class QASystem(object):
 
         #  batch the data
         batch_size = FLAGS.batch_size
+        print("with length", len(train_contexts), "type", type(len(train_contexts)))
         num_batches = len(train_contexts)//batch_size
+	print(num_batches, "batch_size: ", batch_size)
 
-        all_qs = random.shuffle(zip(train_seqs,padded_spans))
+        all_qs = list(zip(train_seqs,padded_spans))
+	random.shuffle(all_qs)
+	print(type(all_qs))
         batches = [all_qs[b_num * batch_size: (b_num + 1)*batch_size]
                    for b_num in range(num_batches)]
 
