@@ -1,4 +1,4 @@
-from __future__ import absolute_import
+# from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
@@ -83,26 +83,26 @@ def load_data_file(name):
 
 def main(_):
 
-    # Do what you need to load datasets from FLAGS.data_dir
-    print("Loading training data")
-
-    os.chdir('..')
-
-    dataset = {}
-
-    dataset['train_contexts'] = load_data_file('train.ids.context')
-    dataset['train_questions'] = load_data_file('train.ids.question')
-    dataset['train_spans'] = load_data_file('train.ids.spans')
-
     #embed_path = FLAGS.embed_path or pjoin("data", "squad", "glove.trimmed.{}.npz".format(FLAGS.embedding_size))
 
+    print("Initializing vocab")
     vocab_path = FLAGS.vocab_path or pjoin(FLAGS.data_dir, "vocab.dat")
     vocab, rev_vocab = initialize_vocab(vocab_path)
 
+    print("Building encoder and decoder")
     encoder = Encoder(size=FLAGS.state_size, vocab_dim=FLAGS.embedding_size)
     decoder = Decoder(output_size=FLAGS.output_size, hidden_size=FLAGS.state_size)
 
+    print("Building QASystem")
     qa = QASystem(encoder, decoder)
+
+    # Do what you need to load datasets from FLAGS.data_dir
+    print("Loading training data")
+    os.chdir('..')
+    dataset = {}
+    dataset['train_contexts'] = load_data_file('train.ids.context')
+    dataset['train_questions'] = load_data_file('train.ids.question')
+    dataset['train_spans'] = load_data_file('train.ids.spans')
 
     if not os.path.exists(FLAGS.log_dir):
         os.makedirs(FLAGS.log_dir)
@@ -115,11 +115,13 @@ def main(_):
 
     with tf.Session() as sess:
         load_train_dir = get_normalized_train_dir(FLAGS.load_train_dir or FLAGS.train_dir)
+        print("Initializing model")
         initialize_model(sess, qa, load_train_dir)
 
         save_train_dir = get_normalized_train_dir(FLAGS.train_dir)
         qa.train(sess, dataset, save_train_dir)
 
+        print("Evaluating answer")
         qa.evaluate_answer(sess, dataset, vocab, FLAGS.evaluate, log=True)
 
 if __name__ == "__main__":

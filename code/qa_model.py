@@ -2,6 +2,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import random
 import time
 import logging
 
@@ -57,7 +58,10 @@ class Encoder(object):
         # input_p = tf.placeholder(tf.float32, (FLAGS.batch_size, FLAGS.embedding_size))
 
         cell = tf.nn.rnn_cell.LSTMCell(self.size, use_peepholes=False)
-        word_res, f_state = tf.nn.dynamic_rnn(cell, inputs, initial_state=encoder_state_input)
+        print(cell)
+        print(inputs)
+        word_res, f_state = tf.nn.dynamic_rnn(cell, inputs, dtype=tf.float32)
+        #word_res, f_state = tf.nn.dynamic_rnn(cell, inputs, initial_state=encoder_state_input)
         return f_state, word_res
 
 
@@ -81,10 +85,11 @@ class Decoder(object):
         :return:
         """
 
-        encode_o, encode_s = knowledge_rep
+        encode_fstate, encode_out = knowledge_rep
 
-        cell = tf.nn.rnn_cell.LSTMCell(self.hidden_size, use_peepholes=False)
-        word_res, _ = tf.nn.dynamic_rnn(cell, encode_o, initial_state=encode_s)
+        with vs.variable_scope("decoder"):
+            cell = tf.nn.rnn_cell.LSTMCell(self.hidden_size, use_peepholes=False)
+            word_res, _ = tf.nn.dynamic_rnn(cell, encode_out, initial_state=encode_fstate)
 
         # now I need a final classification layer
         # result is a vector that represents all outputs
@@ -110,7 +115,7 @@ class QASystem(object):
         """
         self.encoder = encoder
         self.decoder = decoder
-        self.max_length = 200
+        self.max_length = 150
 
 
         # ==== set up placeholder tokens ========
@@ -136,7 +141,7 @@ class QASystem(object):
         to assemble your reading comprehension system!
         :return:
         """
-        initial_hidden = tf.placeholder(tf.float32, (self.encoder.vocab_dim,))
+        initial_hidden = tf.placeholder(tf.float32, (FLAGS.batch_size, FLAGS.state_size))
         hidden_rep = self.encoder.encode(embeds, initial_hidden)
         res = self.decoder.decode(hidden_rep)
         return res
@@ -173,7 +178,7 @@ class QASystem(object):
 
         # We now need to set up the tensorflow emedding
 
-        embed = tf.Variable(self.pretrained_embeddings)
+        embed = tf.Variable(self.pretrained_embeddings, dtype=tf.float32)
         embeddings = tf.nn.embedding_lookup(embed, self.input_placeholder)
         # embeddings = tf.reshape(extracted, (-1, self.max_length, FLAGS.embed_size))
         ### END YOUR CODE
@@ -201,6 +206,7 @@ class QASystem(object):
         """
         in here you should compute a cost for your validation set
         and tune your hyperparameters according to the validation set performance
+
         :return:
         """
         input_feed = {}
@@ -314,6 +320,8 @@ class QASystem(object):
         # so that you can use your trained model to make predictions, or
         # even continue training
 
+        print("Start train function")
+
         tic = time.time()
         params = tf.trainable_variables()
         num_params = sum(map(lambda t: np.prod(tf.shape(t.value()).eval()), params))
@@ -321,10 +329,50 @@ class QASystem(object):
         logging.info("Number of params: %d (retreival took %f secs)" % (num_params, toc - tic))
 
         #TODO: Batch up data, run loop over batches
+        train_contexts = dataset['train_contexts']
+        train_questions = dataset['train_questions']
+        train_spans = dataset['train_spans']
 
+        train_seqs = map(lambda x,y: x +
+                        [self.boundary_token] + y, train_contexts, train_questions)
 
+        padded_spans = [[0] * (len(q) + 1 + start)+ [1] *(end + 1 - start) + [0] * (len(c) - end - 1)
+                        for q, c, (start, end)
+                        in zip(train_questions, train_contexts, train_spans)]
 
+        padded_spans_2 = []
+        n = len(train_contexts)
+        assert (n == len(train_questions))
+        for i in range(n):
+            s, e = train_spans[i]
+            curSeq = [0] * len(train_questions[i])  # question padding
+            curSeq += [0]  # for the separator token
+            curSeq += [0] * s + [1] * (e - s + 1)  # first 0s, 1s for span
+            curSeq += [0] * (len(train_contexts[i]) - e - 1)  # 0s after span
+            padded_spans_2.append(curSeq)
 
+        assert (padded_spans == padded_spans_2)
+
+        #  batch the data
+        batch_size = FLAGS.batch_size
+        num_batches = len(train_contexts)//batch_size
+
+        all_qs = random.shuffle(zip(train_seqs,padded_spans))
+        batches = [all_qs[b_num * batch_size: (b_num + 1)*batch_size]
+                   for b_num in range(num_batches)]
+
+        initializer = tf.global_variables_initializer()
+        session.run(initializer)
+        print("Session initialized, starting training")
+
+        for b_num, b in enumerate(batches):
+            if b_num % 100 == 0:
+                print("Training on batch #{}".format(b))
+
+            ques_con_seq, labels = zip(*b)
+            feed_dict = {self.input_placeholder: ques_con_seq,
+                         self.labels_placeholder: labels}
+            session.run(self.train_op, feed_dict=feed_dict)
 
 
 
