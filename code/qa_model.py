@@ -12,6 +12,8 @@ from six.moves import xrange  # pylint: disable=redefined-builtin
 import tensorflow as tf
 from tensorflow.python.ops import variable_scope as vs
 
+from util import Progbar
+
 from evaluate import exact_match_score, f1_score
 
 logging.basicConfig(level=logging.INFO)
@@ -295,13 +297,35 @@ class QASystem(object):
 
         return f1, em
 
-    def process_dataset(self, dataset):
-        tic = time.time()
-        params = tf.trainable_variables()
-        num_params = sum(map(lambda t: np.prod(tf.shape(t.value()).eval()), params))
-        toc = time.time()
-        logging.info("Number of params: %d (retreival took %f secs)" % (num_params, toc - tic))
+    def train_on_batch(self, session, inputs_batch, labels_batch):
+        """Perform one step of gradient descent on the provided batch of data.
+        """
+        feed_dict = {self.input_placeholder: inputs_batch,
+                  self.labels_placeholder: labels_batch}
+        _, l = session.run([self.train_op, self.loss], feed_dict=feed_dict)
+        return l
 
+    def run_epoch(self, sess, train):
+        prog = Progbar(target=1 + int(len(train) / FLAGS.batch_size))
+        losses = []
+        for i, batch in enumerate(self.build_batches(self.train_qas)):
+            #ques_con_seq, labels = zip(*b)
+            loss = self.train_on_batch(sess, *zip(*batch))
+            losses.append(loss)
+            prog.update(i + 1, [("train loss", loss)])
+
+        return losses
+
+    def fit(self, sess, train):
+        losses = []
+        for epoch in range(FLAGS.epochs):
+            logging.info("Epoch %d out of %d", epoch + 1, FLAGS.epochs)
+            loss = self.run_epoch(sess, train)
+            losses.append(loss)
+        return losses
+
+
+    def process_dataset(self, dataset):
         #TODO: Batch up data, run loop over batches
         all_contexts = dataset['train_contexts']
         all_questions = dataset['train_questions']
@@ -373,31 +397,31 @@ class QASystem(object):
         # so that you can use your trained model to make predictions, or
         # even continue training
 
+        tic = time.time()
+        params = tf.trainable_variables()
+        num_params = sum(map(lambda t: np.prod(tf.shape(t.value()).eval()), params))
+        toc = time.time()
+        logging.info("Number of params: %d (retrieval took %f secs)" % (num_params, toc - tic))
+
         initializer = tf.global_variables_initializer()
         session.run(initializer)
         print("Session initialized, starting training")
 
         print("Start train function")
-        for b_num, b in enumerate(self.build_batches(self.train_qas)):
-            if b_num % 100 == 0:
-                print("Training on batch #{}".format(b_num))
+        losses = self.fit(session, self.train_qas)
 
+        #for b_num, b in enumerate(batches):
+        #    if b_num % 100 == 0:
+        #        print("Training on batch #{}".format(b_num))
 
-            #TODO: Bucket up training points that got thrown out for being too long
-            #so we can use them later
-            ques_con_seq, labels = zip(*b)
+        #    #TODO: Bucket up training points that got thrown out for being too long
+        #    #so we can use them later
+        #    ques_con_seq, labels = zip(*b)
 
-
-            print("ques_con_seq")
-            print([len(l) for l in ques_con_seq])
-            #print(ques_con_seq)
-            print("labels")
-            print([len(l) for l in labels])
-
-
-            feed_dict = {self.input_placeholder: ques_con_seq,
-                         self.labels_placeholder: labels}
-            session.run([self.train_op, self.loss], feed_dict=feed_dict)
+        #    feed_dict = {self.input_placeholder: ques_con_seq,
+        #                 self.labels_placeholder: labels}
+        #    _, l = session.run([self.train_op, self.loss], feed_dict=feed_dict)
+        #    print(l)
 
 
 
