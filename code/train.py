@@ -115,13 +115,15 @@ def main(_):
     with open(os.path.join(FLAGS.log_dir, "flags.json"), 'w') as fout:
         json.dump(FLAGS.__flags, fout)
 
+    qa.process_dataset(dataset)
+
     with tf.Session() as sess:
         load_train_dir = get_normalized_train_dir(FLAGS.load_train_dir or FLAGS.train_dir)
         print("Initializing model")
         initialize_model(sess, qa, load_train_dir)
 
         save_train_dir = get_normalized_train_dir(FLAGS.train_dir)
-        qa.train(sess, dataset, save_train_dir)
+        qa.train(sess)
 
         print("Evaluating answer")
         qa.evaluate_answer(sess, dataset, vocab, FLAGS.evaluate, log=True)

@@ -295,7 +295,55 @@ class QASystem(object):
 
         return f1, em
 
-    def train(self, session, dataset, train_dir):
+    def process_dataset(self, dataset):
+        tic = time.time()
+        params = tf.trainable_variables()
+        num_params = sum(map(lambda t: np.prod(tf.shape(t.value()).eval()), params))
+        toc = time.time()
+        logging.info("Number of params: %d (retreival took %f secs)" % (num_params, toc - tic))
+
+        #TODO: Batch up data, run loop over batches
+        all_contexts = dataset['train_contexts']
+        all_questions = dataset['train_questions']
+        all_spans = dataset['train_spans']
+        #print(train_spans[:2])
+
+        all_seqs = map(lambda x,y: x + [self.boundary_token_index] + y +
+                                     [0] * (FLAGS.max_length - len(x) - len(y) - 1),
+                         all_contexts, all_questions)
+        all_seqs = [x for x in all_seqs if len(x) <= FLAGS.max_length]
+
+        padded_spans = [[0] * (len(q) + 1 + start) + [1] * (end + 1 - start) +
+                        [0] * (FLAGS.max_length - (end + 1) - (len(q) + 1))
+                        for q, c, (start, end)
+                        in zip(all_questions, all_contexts, all_spans)
+                        if len(q) + len(c) + 1 <= FLAGS.max_length]
+
+        all_qs = list(zip(all_seqs, padded_spans))
+        # random.shuffle(all_qs)  # change the train/validation set from run to run
+
+        train_size = int(len(all_qs) * .8)
+        self.train_qas = all_qs[:train_size]
+        self.dev_qas = all_qs[train_size:]
+
+
+    def build_batches(self, qas_set):
+        """
+        :param qas_set:  list of [question, seq]
+        :return: batched lists of [question, seq]
+        """
+        random.shuffle(qas_set)  # make different batches each time
+
+        batch_size = FLAGS.batch_size
+        num_batches = len(qas_set)//batch_size
+        print(num_batches, "batch_size: ", batch_size)
+
+        batches = [qas_set[b_num * batch_size: (b_num + 1) * batch_size]
+                   for b_num in range(num_batches)]
+
+        return batches
+
+    def train(self, session):
         """
         Implement main training loop
 
@@ -325,49 +373,12 @@ class QASystem(object):
         # so that you can use your trained model to make predictions, or
         # even continue training
 
-        print("Start train function")
-
-        tic = time.time()
-        params = tf.trainable_variables()
-        num_params = sum(map(lambda t: np.prod(tf.shape(t.value()).eval()), params))
-        toc = time.time()
-        logging.info("Number of params: %d (retreival took %f secs)" % (num_params, toc - tic))
-
-        #TODO: Batch up data, run loop over batches
-        train_contexts = dataset['train_contexts']
-        train_questions = dataset['train_questions']
-        train_spans = dataset['train_spans']
-        #print(train_spans[:2])
-
-        train_seqs = map(lambda x,y: x + [self.boundary_token_index] + y +
-                        [0] * (FLAGS.max_length - len(x) - len(y) - 1),
-                         train_contexts, train_questions)
-        train_seqs = [x for x in train_seqs if len(x) <= FLAGS.max_length]
-
-        padded_spans = [[0] * (len(q) + 1 + start)+ [1] *(end + 1 - start) +
-                        [0] * (FLAGS.max_length - (end + 1)  - (len(q) + 1))
-                        for q, c, (start, end)
-                        in zip(train_questions, train_contexts, train_spans)
-                        if len(q) + len(c) + 1 <= FLAGS.max_length]
-
-
-        #  batch the data
-        batch_size = FLAGS.batch_size
-        #print("with length", len(train_contexts), "type", type(len(train_contexts)))
-        num_batches = len(train_contexts)//batch_size
-        print(num_batches, "batch_size: ", batch_size)
-
-        all_qs = list(zip(train_seqs,padded_spans))
-        random.shuffle(all_qs)
-        #print(type(all_qs))
-        batches = [all_qs[b_num * batch_size: (b_num + 1)*batch_size]
-                   for b_num in range(num_batches)]
-
         initializer = tf.global_variables_initializer()
         session.run(initializer)
         print("Session initialized, starting training")
 
-        for b_num, b in enumerate(batches):
+        print("Start train function")
+        for b_num, b in enumerate(self.build_batches(self.train_qas)):
             if b_num % 100 == 0:
                 print("Training on batch #{}".format(b_num))
 
