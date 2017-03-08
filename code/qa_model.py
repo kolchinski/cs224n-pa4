@@ -35,7 +35,7 @@ class Encoder(object):
         self.size = size
         self.vocab_dim = vocab_dim
 
-    def encode(self, inputs, encoder_state_input):
+    def encode(self, inputs, encoder_state_input = None):
         """
         In a generalized encode function, you pass in your inputs,
         masks, and an initial
@@ -57,7 +57,6 @@ class Encoder(object):
 
         # input_p = tf.placeholder(tf.float32, (FLAGS.batch_size, FLAGS.embedding_size))
         cell = tf.nn.rnn_cell.BasicLSTMCell(self.size)
-        print(cell.state_size)
         #print(encoder_state_input.get_shape())
         word_res, f_state = tf.nn.dynamic_rnn(cell, inputs, dtype=tf.float32)
         #word_res, f_state = tf.nn.dynamic_rnn(cell, inputs,
@@ -132,10 +131,10 @@ class QASystem(object):
         with tf.variable_scope("qa", initializer=tf.uniform_unit_scaling_initializer(1.0)):
             embeds = self.setup_embeddings()
             self.results = self.setup_system(embeds)
-            loss = self.setup_loss(self.results)
+            self.loss = self.setup_loss(self.results)
 
         # ==== set up training/updating procedure ====
-        self.train_op = tf.train.AdamOptimizer(FLAGS.learning_rate).minimize(loss)
+        self.train_op = tf.train.AdamOptimizer(FLAGS.learning_rate).minimize(self.loss)
 
     def setup_system(self, embeds):
         """
@@ -144,10 +143,11 @@ class QASystem(object):
         to assemble your reading comprehension system!
         :return:
         """
-        initial_hidden_c = tf.placeholder(tf.float32, (None, FLAGS.state_size))
-        initial_hidden_h = tf.placeholder(tf.float32, (None, FLAGS.state_size))
-        initial_hidden = tf.nn.rnn_cell.LSTMStateTuple(initial_hidden_c, initial_hidden_h)
-        hidden_rep = self.encoder.encode(embeds, initial_hidden)
+        #initial_hidden_c = tf.placeholder(tf.float32, (None, FLAGS.state_size))
+        #initial_hidden_h = tf.placeholder(tf.float32, (None, FLAGS.state_size))
+        #initial_hidden = tf.nn.rnn_cell.LSTMStateTuple(initial_hidden_c, initial_hidden_h)
+        #hidden_rep = self.encoder.encode(embeds, initial_hidden)
+        hidden_rep = self.encoder.encode(embeds)
         res = self.decoder.decode(hidden_rep)
         return res
 
@@ -337,37 +337,29 @@ class QASystem(object):
         train_contexts = dataset['train_contexts']
         train_questions = dataset['train_questions']
         train_spans = dataset['train_spans']
-        print(train_spans[:2])
+        #print(train_spans[:2])
 
-        train_seqs = map(lambda x,y: x +
-                        [self.boundary_token] + y, train_contexts, train_questions)
+        train_seqs = map(lambda x,y: x + [self.boundary_token_index] + y +
+                        [0] * (FLAGS.max_length - len(x) - len(y) - 1),
+                         train_contexts, train_questions)
+        train_seqs = [x for x in train_seqs if len(x) <= FLAGS.max_length]
 
-        padded_spans = [[0] * (len(q) + 1 + start)+ [1] *(end + 1 - start) + [0] * (len(c) - end - 1)
+        padded_spans = [[0] * (len(q) + 1 + start)+ [1] *(end + 1 - start) +
+                        [0] * (FLAGS.max_length - (end + 1)  - (len(q) + 1))
                         for q, c, (start, end)
-                        in zip(train_questions, train_contexts, train_spans)]
+                        in zip(train_questions, train_contexts, train_spans)
+                        if len(q) + len(c) + 1 <= FLAGS.max_length]
 
-        padded_spans_2 = []
-        n = len(train_contexts)
-        assert (n == len(train_questions))
-        for i in range(n):
-            s, e = train_spans[i]
-            curSeq = [0] * len(train_questions[i])  # question padding
-            curSeq += [0]  # for the separator token
-            curSeq += [0] * s + [1] * (e - s + 1)  # first 0s, 1s for span
-            curSeq += [0] * (len(train_contexts[i]) - e - 1)  # 0s after span
-            padded_spans_2.append(curSeq)
-
-        assert (padded_spans == padded_spans_2)
 
         #  batch the data
         batch_size = FLAGS.batch_size
-        print("with length", len(train_contexts), "type", type(len(train_contexts)))
+        #print("with length", len(train_contexts), "type", type(len(train_contexts)))
         num_batches = len(train_contexts)//batch_size
-	print(num_batches, "batch_size: ", batch_size)
+        print(num_batches, "batch_size: ", batch_size)
 
         all_qs = list(zip(train_seqs,padded_spans))
-	random.shuffle(all_qs)
-	print(type(all_qs))
+        random.shuffle(all_qs)
+        #print(type(all_qs))
         batches = [all_qs[b_num * batch_size: (b_num + 1)*batch_size]
                    for b_num in range(num_batches)]
 
@@ -377,12 +369,24 @@ class QASystem(object):
 
         for b_num, b in enumerate(batches):
             if b_num % 100 == 0:
-                print("Training on batch #{}".format(b))
+                print("Training on batch #{}".format(b_num))
 
+
+            #TODO: Bucket up training points that got thrown out for being too long
+            #so we can use them later
             ques_con_seq, labels = zip(*b)
+
+
+            print("ques_con_seq")
+            print([len(l) for l in ques_con_seq])
+            #print(ques_con_seq)
+            print("labels")
+            print([len(l) for l in labels])
+
+
             feed_dict = {self.input_placeholder: ques_con_seq,
                          self.labels_placeholder: labels}
-            session.run(self.train_op, feed_dict=feed_dict)
+            session.run([self.train_op, self.loss], feed_dict=feed_dict)
 
 
 

@@ -32,7 +32,7 @@ tf.app.flags.DEFINE_integer("keep", 0, "How many checkpoints to keep, 0 indicate
 tf.app.flags.DEFINE_string("vocab_path", "data/squad/vocab.dat", "Path to vocab file (default: ./data/squad/vocab.dat)")
 tf.app.flags.DEFINE_string("embed_path", "", "Path to the trimmed GLoVe embedding (default: ./data/squad/glove.trimmed.{embedding_size}.npz)")
 
-tf.app.flags.DEFINE_string("max_length", 150, "Length of longest context we'll use")
+tf.app.flags.DEFINE_string("max_length", 250, "Length of longest context we'll use")
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -87,6 +87,7 @@ def main(_):
 
     #embed_path = FLAGS.embed_path or pjoin("data", "squad", "glove.trimmed.{}.npz".format(FLAGS.embedding_size))
 
+    os.chdir('..')
     print("Initializing vocab")
     vocab_path = FLAGS.vocab_path or pjoin(FLAGS.data_dir, "vocab.dat")
     vocab, rev_vocab = initialize_vocab(vocab_path)
@@ -100,7 +101,6 @@ def main(_):
 
     # Do what you need to load datasets from FLAGS.data_dir
     print("Loading training data")
-    os.chdir('..')
     dataset = {}
     dataset['train_contexts'] = load_data_file('train.ids.context')
     dataset['train_questions'] = load_data_file('train.ids.question')
