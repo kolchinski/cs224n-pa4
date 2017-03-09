@@ -346,7 +346,8 @@ class QASystem(object):
 
         if log:
             logging.info("\nF1: {}, EM: {}, for {} samples".format(f1, em, sample))
-            logging.info("{} total words predicted".format(np.sum(pred)))
+            logging.info("{} mean prob; {} total words predicted".format(
+                np.mean(probs), np.sum(pred)))
 
         return f1, em
 
@@ -367,8 +368,7 @@ class QASystem(object):
             loss = self.train_on_batch(sess, *zip(*batch))
             losses.append(loss)
             prog.update(i + 1, [("train loss", loss)])
-            if i%25 == 0:
-                f1, em = self.evaluate_answer(sess, self.train_qas, log=True)
+        f1, em = self.evaluate_answer(sess, self.train_qas, log=True)
 
         return losses
 
