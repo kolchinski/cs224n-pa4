@@ -330,9 +330,9 @@ class QASystem(object):
         #print(y[0])
         #print(x[0])
 
-        print(zip(pred_sentences, gold_sentences)[1])
-        print(orig_sentences[1])
-        print(y[1])
+        #print(zip(pred_sentences, gold_sentences)[1])
+        #print(orig_sentences[1])
+        #print(y[1])
 
         #print(gold_sentences)
 
