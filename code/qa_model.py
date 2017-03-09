@@ -293,6 +293,10 @@ class QASystem(object):
 
         x, y = zip(*eval_pts)
 
+        orig_sentences = [' '.join([self.vocab[i] for i in l]) for l in x]
+        #print(orig_sentences)
+
+
         feed_dict = {self.input_placeholder: x}
         probs, = session.run([self.results], feed_dict=feed_dict)
 
@@ -302,19 +306,44 @@ class QASystem(object):
         x = np.array(x)
         y = np.array(y)
 
-        pred = np.array([[round(m) for m in n] for n in probs])
+        pred = [[int(round(m)) for m in n] for n in probs]
 
-        pred_word_indices = [[x[k] for k in j] for (i,j) in zip(x,pred)]
-        gold_word_indices = [[x[k] for k in j] for (i,j) in zip(x,y)]
+        #print('\n pred sum: {} \n'.format(np.sum(np.array(pred))))
+
+        #print(pred)
+        #print(y)
+
+        pred_word_indices = [map(lambda t: t[0], filter(lambda t: t[1], zip(x[i], pred[i]))) for i in range(len(x))]
+        gold_word_indices = [map(lambda t: t[0], filter(lambda t: t[1], zip(x[i], y[i]))) for i in range(len(x))]
+        #gold_word_indices = map(lambda x: x[0], filter(lambda x: x[1], zip(x[1], gold[1])))
+
+        #pred_word_indices = [[k for (k,l) in zip(i,j) if l] for (i,j) in zip(x,pred)]
+        #gold_word_indices = [[k for (k,l) in zip(i,j) if l] for (i,j) in zip(x,y)]
+
+        #print(pred_word_indices)
+        #print(gold_word_indices)
 
         pred_sentences = [' '.join([self.vocab[i] for i in l]) for l in pred_word_indices]
         gold_sentences = [' '.join([self.vocab[i] for i in l]) for l in gold_word_indices]
 
+        #print(pred_sentences[0])
+        #print(gold_sentences[0])
+        #print(y[0])
+        #print(x[0])
+
+        print(zip(pred_sentences, gold_sentences)[1])
+        print(orig_sentences[1])
+        print(y[1])
+
+        #print(gold_sentences)
+
         f1s = np.array([f1_score(p,g) for p,g in zip(pred_sentences, gold_sentences)])
         ems = np.array([exact_match_score(p,g) for p,g in zip(pred_sentences, gold_sentences)])
 
-        f1 = 1.0/(np.mean(1.0/f1s))
-        em = 1.0/(np.mean(1.0/ems))
+        #print(ems)
+
+        f1 = np.mean(f1s)
+        em = np.mean(ems)
 
         if log:
             logging.info("\nF1: {}, EM: {}, for {} samples".format(f1, em, sample))
@@ -358,6 +387,9 @@ class QASystem(object):
         all_questions = dataset['train_questions']
         all_spans = dataset['train_spans']
         self.vocab = dataset['vocab']
+        self.train_contexts = all_contexts
+        self.train_questions = all_questions
+        self.train_spans = all_spans
 
         #print(train_spans[:2])
 
