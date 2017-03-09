@@ -178,10 +178,9 @@ class QASystem(object):
         with open(embed_path, "rb") as f:
             self.pretrained_embeddings = np.load(f)['glove']
 
-        self.boundary_token = np.random.randn(FLAGS.embedding_size)
-        np.append(self.pretrained_embeddings, self.boundary_token)
-
-        self.boundary_token_index = len(self.boundary_token) - 1
+        self.boundary_token = np.random.randn(1, FLAGS.embedding_size)
+        self.pretrained_embeddings = np.append(self.pretrained_embeddings, self.boundary_token, axis=0)
+        self.boundary_token_index = len(self.pretrained_embeddings) - 1
 
         # We now need to set up the tensorflow emedding
 
@@ -347,6 +346,7 @@ class QASystem(object):
 
         if log:
             logging.info("\nF1: {}, EM: {}, for {} samples".format(f1, em, sample))
+            logging.info("{} total words predicted".format(np.sum(pred)))
 
         return f1, em
 
@@ -356,8 +356,6 @@ class QASystem(object):
         feed_dict = {self.input_placeholder: inputs_batch,
                   self.labels_placeholder: labels_batch}
         _, l = session.run([self.train_op, self.loss], feed_dict=feed_dict)
-
-        f1, em = self.evaluate_answer(session, self.train_qas, log=True)
 
         return l
 
@@ -369,6 +367,8 @@ class QASystem(object):
             loss = self.train_on_batch(sess, *zip(*batch))
             losses.append(loss)
             prog.update(i + 1, [("train loss", loss)])
+            if i%25 == 0:
+                f1, em = self.evaluate_answer(sess, self.train_qas, log=True)
 
         return losses
 
@@ -387,6 +387,10 @@ class QASystem(object):
         all_questions = dataset['train_questions']
         all_spans = dataset['train_spans']
         self.vocab = dataset['vocab']
+        self.vocab.append("<SEP>")
+        assert(len(self.vocab) == len(self.pretrained_embeddings))
+        #Adding separator to the vocab, should ideally be done during model setup but oh well
+
         self.train_contexts = all_contexts
         self.train_questions = all_questions
         self.train_spans = all_spans
@@ -395,7 +399,7 @@ class QASystem(object):
 
         all_seqs = map(lambda x,y: x + [self.boundary_token_index] + y +
                                      [0] * (FLAGS.max_length - len(x) - len(y) - 1),
-                         all_contexts, all_questions)
+                         all_questions, all_contexts)
         all_seqs = [x for x in all_seqs if len(x) <= FLAGS.max_length]
 
         padded_spans = [[0] * (len(q) + 1 + start) + [1] * (end + 1 - start) +
