@@ -402,9 +402,17 @@ class QASystem(object):
                          all_questions, all_contexts)
         all_seqs = [x for x in all_seqs if len(x) <= FLAGS.max_length]
 
-        padded_spans = [[0] * (len(q) + 1 + start) + [1] * (end + 1 - start) +
-                        [0] * (FLAGS.max_length - (end + 1) - (len(q) + 1))
-                        for q, c, (start, end)
+        def pad_spans(q, start, end):
+            if end < start:
+                end = start
+            pre = len(q) + 1 + start
+            center = end + 1 - start
+            post = FLAGS.max_length - (end + 1) - (len(q) + 1)
+            data = [0] * pre + [1] * center + [0]* post
+            assert(len(data) == FLAGS.max_length)
+            return data
+
+        padded_spans = [pad_spans(q, start, end) for q, c, (start, end)
                         in zip(all_questions, all_contexts, all_spans)
                         if len(q) + len(c) + 1 <= FLAGS.max_length]
 
