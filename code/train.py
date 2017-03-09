@@ -106,6 +106,9 @@ def main(_):
     dataset['train_questions'] = load_data_file('train.ids.question')
     dataset['train_spans'] = load_data_file('train.span')
 
+    with open(os.path.join(FLAGS.data_dir, 'vocab.dat')) as f:
+        dataset['vocab'] = f.readlines()
+
     if not os.path.exists(FLAGS.log_dir):
         os.makedirs(FLAGS.log_dir)
     file_handler = logging.FileHandler(pjoin(FLAGS.log_dir, "log.txt"))

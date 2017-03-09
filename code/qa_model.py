@@ -289,11 +289,35 @@ class QASystem(object):
         :return:
         """
 
-        f1 = 0.
-        em = 0.
+        eval_pts = dataset[:100]
+
+        x, y = zip(*eval_pts)
+
+        feed_dict = {self.input_placeholder: x}
+        probs, = session.run([self.results], feed_dict=feed_dict)
+
+        #print("prediction lengths")
+        #print([len(x) for x in pred])
+
+        x = np.array(x)
+        y = np.array(y)
+
+        pred = np.array([[round(m) for m in n] for n in probs])
+
+        pred_word_indices = [[x[k] for k in j] for (i,j) in zip(x,pred)]
+        gold_word_indices = [[x[k] for k in j] for (i,j) in zip(x,y)]
+
+        pred_sentences = [' '.join([self.vocab[i] for i in l]) for l in pred_word_indices]
+        gold_sentences = [' '.join([self.vocab[i] for i in l]) for l in gold_word_indices]
+
+        f1s = np.array([f1_score(p,g) for p,g in zip(pred_sentences, gold_sentences)])
+        ems = np.array([exact_match_score(p,g) for p,g in zip(pred_sentences, gold_sentences)])
+
+        f1 = 1.0/(np.mean(1.0/f1s))
+        em = 1.0/(np.mean(1.0/ems))
 
         if log:
-            logging.info("F1: {}, EM: {}, for {} samples".format(f1, em, sample))
+            logging.info("\nF1: {}, EM: {}, for {} samples".format(f1, em, sample))
 
         return f1, em
 
@@ -303,6 +327,9 @@ class QASystem(object):
         feed_dict = {self.input_placeholder: inputs_batch,
                   self.labels_placeholder: labels_batch}
         _, l = session.run([self.train_op, self.loss], feed_dict=feed_dict)
+
+        f1, em = self.evaluate_answer(session, self.train_qas, log=True)
+
         return l
 
     def run_epoch(self, sess, train):
@@ -330,6 +357,8 @@ class QASystem(object):
         all_contexts = dataset['train_contexts']
         all_questions = dataset['train_questions']
         all_spans = dataset['train_spans']
+        self.vocab = dataset['vocab']
+
         #print(train_spans[:2])
 
         all_seqs = map(lambda x,y: x + [self.boundary_token_index] + y +
