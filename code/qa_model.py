@@ -164,7 +164,7 @@ class QASystem(object):
             y = self.labels_placeholder
             orig_loss = tf.nn.l2_loss((final_res - y))
             # now we need to weight the losses for missing the 1
-            weighted_loss = orig_loss + FLAGS.recall_multiplier * y * orig_loss
+            weighted_loss = (FLAGS.recall_multiplier * y + 1) * orig_loss
             loss = tf.reduce_mean(weighted_loss)
 
         return loss
@@ -277,7 +277,7 @@ class QASystem(object):
 
         return valid_cost
 
-    def evaluate_answer(self, session, dataset, sample=100, log=False):
+    def evaluate_answer(self, session, sample=500, log=True):
         """
         Evaluate the model's performance using the harmonic mean of F1 and Exact Match (EM)
         with the set of true answer labels
@@ -286,65 +286,20 @@ class QASystem(object):
         from either training or testing set.
 
         :param session: session should always be centrally managed in train.py
-        :param dataset: a representation of our data, in some implementations, you can
-                        pass in multiple components (arguments) of one dataset to this function
         :param sample: how many examples in dataset we look at
         :param log: whether we print to std out stream
         :return:
         """
+        eval_set = random.sample(self.dev_qas, sample)
+        sent_vec, gold_spans, masks = zip(*eval_set)
 
-        eval_pts = dataset[:100]
+        feed_dict = {self.input_placeholder: sent_vec}
+        pred_probs, = session.run([self.results], feed_dict=feed_dict)
+        pred_spans = [[int(round(m)) for m in n] for n in pred_probs]
+        # don't need to remask this.
 
-        x, y = zip(*eval_pts)
-
-        orig_sentences = [' '.join([self.vocab[i] for i in l]) for l in x]
-        #print(orig_sentences)
-
-
-        feed_dict = {self.input_placeholder: x}
-        probs, = session.run([self.results], feed_dict=feed_dict)
-
-        #print("prediction lengths")
-        #print([len(x) for x in pred])
-
-        x = np.array(x)
-        y = np.array(y)
-
-        pred = [[int(round(m)) for m in n] for n in probs]
-
-        #print('\n pred sum: {} \n'.format(np.sum(np.array(pred))))
-
-        #print(pred)
-        #print(y)
-
-        pred_word_indices = [map(lambda t: t[0], filter(lambda t: t[1], zip(x[i], pred[i]))) for i in range(len(x))]
-        gold_word_indices = [map(lambda t: t[0], filter(lambda t: t[1], zip(x[i], y[i]))) for i in range(len(x))]
-        #gold_word_indices = map(lambda x: x[0], filter(lambda x: x[1], zip(x[1], gold[1])))
-
-        #pred_word_indices = [[k for (k,l) in zip(i,j) if l] for (i,j) in zip(x,pred)]
-        #gold_word_indices = [[k for (k,l) in zip(i,j) if l] for (i,j) in zip(x,y)]
-
-        #print(pred_word_indices)
-        #print(gold_word_indices)
-
-        pred_sentences = [' '.join([self.vocab[i] for i in l]) for l in pred_word_indices]
-        gold_sentences = [' '.join([self.vocab[i] for i in l]) for l in gold_word_indices]
-
-        #print(pred_sentences[0])
-        #print(gold_sentences[0])
-        #print(y[0])
-        #print(x[0])
-
-        #print(zip(pred_sentences, gold_sentences)[1])
-        #print(orig_sentences[1])
-        #print(y[1])
-
-        #print(gold_sentences)
-
-        f1s = np.array([f1_score(p,g) for p,g in zip(pred_sentences, gold_sentences)])
-        ems = np.array([exact_match_score(p,g) for p,g in zip(pred_sentences, gold_sentences)])
-
-        #print(ems)
+        f1s, ems = zip(*(self.eval_sentence(p, g, s)
+                         for p, g, s in zip(sent_vec, gold_spans, pred_spans)))
 
         f1 = np.mean(f1s)
         em = np.mean(ems)
@@ -352,8 +307,20 @@ class QASystem(object):
         if log:
             logging.info("\nF1: {}, EM: {}, for {} samples".format(f1, em, sample))
             logging.info("{} mean prob; {} total words predicted".format(
-                np.mean(probs), np.sum(pred)))
+                np.mean(pred_probs), np.sum(pred_spans)))
 
+        return f1, em
+
+
+    def eval_sentence(self, preds_ind, gold_ind, sentence):
+        pred_vecs = [s for s, p in zip(sentence, preds_ind) if p]
+        gold_vecs = [s for s, g in zip(sentence, gold_ind) if g]
+
+        pred_sent = ' '.join(self.vocab[i] for i in pred_vecs)
+        gold_sent = ' '.join(self.vocab[i] for i in gold_vecs)
+
+        f1 = f1_score(pred_sent, gold_sent)
+        em = exact_match_score(pred_sent, gold_sent)
         return f1, em
 
     def train_on_batch(self, session, inputs_batch, labels_batch):
@@ -377,6 +344,7 @@ class QASystem(object):
 
         return losses
 
+
     def fit(self, sess, train):
         losses = []
         for epoch in range(FLAGS.epochs):
@@ -388,9 +356,9 @@ class QASystem(object):
 
     def process_dataset(self, dataset):
         #TODO: Batch up data, run loop over batches
-        all_contexts = dataset['train_contexts']
-        all_questions = dataset['train_questions']
-        all_spans = dataset['train_spans']
+        all_contexts = dataset['contexts']
+        all_questions = dataset['questions']
+        all_spans = dataset['spans']
         self.vocab = dataset['vocab']
         self.vocab.append("<SEP>")
         assert(len(self.vocab) == len(self.pretrained_embeddings))

@@ -104,15 +104,10 @@ def main(_):
     print("Building QASystem")
     qa = QASystem(encoder, decoder)
 
-    # Do what you need to load datasets from FLAGS.data_dir
-    print("Loading training data")
-    dataset = {}
-    dataset['train_contexts'] = load_data_file('train.ids.context')
-    dataset['train_questions'] = load_data_file('train.ids.question')
-    dataset['train_spans'] = load_data_file('train.span')
-
     with open(os.path.join(FLAGS.data_dir, 'vocab.dat'), "rb") as f:
-        dataset['vocab'] = [l.strip() for l in f.readlines()]
+        vocab = [l.strip() for l in f.readlines()]
+
+    process_training(qa, vocab)
 
     if not os.path.exists(FLAGS.log_dir):
         os.makedirs(FLAGS.log_dir)
@@ -123,7 +118,6 @@ def main(_):
     with open(os.path.join(FLAGS.log_dir, "flags.json"), 'w') as fout:
         json.dump(FLAGS.__flags, fout)
 
-    qa.process_dataset(dataset)
 
     with tf.Session() as sess:
         load_train_dir = get_normalized_train_dir(FLAGS.load_train_dir or FLAGS.train_dir)
@@ -134,7 +128,18 @@ def main(_):
         qa.train(sess)
 
         print("Evaluating answer")
-        qa.evaluate_answer(sess, dataset, vocab, FLAGS.evaluate, log=True)
+        qa.evaluate_answer(sess, vocab, FLAGS.evaluate, log=True)
+
+
+def process_training(qa, vocab):
+    print("Loading training data")
+    dataset = {}
+    dataset['contexts'] = load_data_file('train.ids.context')
+    dataset['questions'] = load_data_file('train.ids.question')
+    dataset['spans'] = load_data_file('train.span')
+    dataset['vocab'] = vocab
+
+    qa.process_dataset(dataset)
 
 if __name__ == "__main__":
     tf.app.run()
