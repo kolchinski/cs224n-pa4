@@ -14,6 +14,8 @@ import logging
 
 logging.basicConfig(level=logging.INFO)
 
+
+tf.app.flags.DEFINE_float("recall_multiplier", 20, "Proportionality multiplier for false negative penalty")
 tf.app.flags.DEFINE_float("learning_rate", 0.01, "Learning rate.")
 tf.app.flags.DEFINE_float("max_gradient_norm", 10.0, "Clip gradients to this norm.")
 tf.app.flags.DEFINE_float("dropout", 0.15, "Fraction of units randomly dropped on non-recurrent connections.")
@@ -74,7 +76,10 @@ def get_normalized_train_dir(train_dir):
         os.unlink(global_train_dir)
     if not os.path.exists(train_dir):
         os.makedirs(train_dir)
-    os.symlink(os.path.abspath(train_dir), global_train_dir)
+    try:
+        os.symlink(os.path.abspath(train_dir), global_train_dir)
+    except Exception:
+        pass
     return global_train_dir
 
 
@@ -106,7 +111,7 @@ def main(_):
     dataset['train_questions'] = load_data_file('train.ids.question')
     dataset['train_spans'] = load_data_file('train.span')
 
-    with open(os.path.join(FLAGS.data_dir, 'vocab.dat')) as f:
+    with open(os.path.join(FLAGS.data_dir, 'vocab.dat'), "rb") as f:
         dataset['vocab'] = [l.strip() for l in f.readlines()]
 
     if not os.path.exists(FLAGS.log_dir):

@@ -162,8 +162,11 @@ class QASystem(object):
         """
         with vs.variable_scope("loss"):
             y = self.labels_placeholder
-            losses = tf.nn.l2_loss((final_res - y))
-            loss = tf.reduce_mean(losses)
+            orig_loss = tf.nn.l2_loss((final_res - y))
+            # now we need to weight the losses for missing the 1
+            weighted_loss = orig_loss + FLAGS.recall_multiplier * y * orig_loss
+            loss = tf.reduce_mean(weighted_loss)
+
         return loss
 
     def setup_embeddings(self):
