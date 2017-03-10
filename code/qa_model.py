@@ -37,7 +37,7 @@ class Encoder(object):
         self.size = size
         self.vocab_dim = vocab_dim
 
-    def encode(self, inputs, encoder_state_input = None):
+    def encode(self, inputs, masks, encoder_state_input = None):
         """
         In a generalized encode function, you pass in your inputs,
         masks, and an initial
@@ -58,10 +58,11 @@ class Encoder(object):
         """
 
         # input_p = tf.placeholder(tf.float32, (FLAGS.batch_size, FLAGS.embedding_size))
+        seq_lengths = [e + 1 for (s,e) in masks]
         cell = tf.nn.rnn_cell.LSTMCell(self.size)
         cell = tf.nn.rnn_cell.DropoutWrapper(cell, output_keep_prob = 1.0 - FLAGS.dropout)
         #print(encoder_state_input.get_shape())
-        word_res, f_state = tf.nn.dynamic_rnn(cell, inputs, dtype=tf.float32)
+        word_res, f_state = tf.nn.dynamic_rnn(cell, inputs, sequence_length=seq_lengths, dtype=tf.float32)
         #word_res, f_state = tf.nn.dynamic_rnn(cell, inputs,
         #                    initial_state = encoder_state_input)
         return f_state, word_res
@@ -72,7 +73,7 @@ class Decoder(object):
         self.output_size = output_size
         self.hidden_size = hidden_size
 
-    def decode(self, knowledge_rep):
+    def decode(self, knowledge_rep, masks):
         """
         takes in a knowledge representation
         and output a probability estimation over
@@ -88,11 +89,12 @@ class Decoder(object):
         """
 
         encode_fstate, encode_out = knowledge_rep
+        seq_lengths = [e + 1 for (s,e) in masks]
 
         with vs.variable_scope("decoder"):
             cell = tf.nn.rnn_cell.LSTMCell(self.hidden_size, use_peepholes=False)
             cell = tf.nn.rnn_cell.DropoutWrapper(cell, output_keep_prob = 1.0 - FLAGS.dropout)
-            word_res, _ = tf.nn.dynamic_rnn(cell, encode_out, initial_state=encode_fstate)
+            word_res, _ = tf.nn.dynamic_rnn(cell, encode_out, sequence_length=seq_lengths, initial_state=encode_fstate)
 
         # now I need a final classification layer
         # result is a vector that represents all outputs
@@ -106,6 +108,9 @@ class Decoder(object):
         #inner = tf.einsum()
         word_res = tf.nn.sigmoid(inner)
         word_res = tf.reshape(word_res, [-1, FLAGS.max_length])
+
+        #TODO: zero out irrelevant positions (before and after context) of predictions
+        word_res = word_res
         return  word_res
 
 
@@ -151,8 +156,8 @@ class QASystem(object):
         #initial_hidden_h = tf.placeholder(tf.float32, (None, FLAGS.state_size))
         #initial_hidden = tf.nn.rnn_cell.LSTMStateTuple(initial_hidden_c, initial_hidden_h)
         #hidden_rep = self.encoder.encode(embeds, initial_hidden)
-        hidden_rep = self.encoder.encode(embeds)
-        res = self.decoder.decode(hidden_rep)
+        hidden_rep = self.encoder.encode(embeds, self.mask_placeholder)
+        res = self.decoder.decode(hidden_rep, self.mask_placeholder)
         return res
 
     def setup_loss(self, final_res):
@@ -323,11 +328,12 @@ class QASystem(object):
         em = exact_match_score(pred_sent, gold_sent)
         return f1, em
 
-    def train_on_batch(self, session, inputs_batch, labels_batch):
+    def train_on_batch(self, session, inputs_batch, labels_batch, masks_batch):
         """Perform one step of gradient descent on the provided batch of data.
         """
         feed_dict = {self.input_placeholder: inputs_batch,
-                  self.labels_placeholder: labels_batch}
+                     self.labels_placeholder: labels_batch,
+                     self.mask_placeholder: masks_batch}
         _, l = session.run([self.train_op, self.loss], feed_dict=feed_dict)
 
         return l
@@ -389,7 +395,11 @@ class QASystem(object):
                         in zip(all_questions, all_contexts, all_spans)
                         if len(q) + len(c) + 1 <= FLAGS.max_length]
 
-        all_qs = list(zip(all_seqs, padded_spans))
+        seq_starts = [len(q) + 1 for q in all_questions]
+        seq_ends = [len(q) + len(c)  for (q,c) in zip(all_questions, all_contexts)]
+        seq_spans = zip(seq_starts, seq_ends)
+
+        all_qs = list(zip(all_seqs, padded_spans, seq_spans))
         # random.shuffle(all_qs)  # change the train/validation set from run to run
 
         train_size = int(len(all_qs) * .8)
