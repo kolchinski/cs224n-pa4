@@ -58,7 +58,8 @@ class Encoder(object):
         """
 
         # input_p = tf.placeholder(tf.float32, (FLAGS.batch_size, FLAGS.embedding_size))
-        cell = tf.nn.rnn_cell.BasicLSTMCell(self.size)
+        cell = tf.nn.rnn_cell.LSTMCell(self.size)
+        cell = tf.nn.rnn_cell.DropoutWrapper(cell, output_keep_prob = 1.0 - FLAGS.dropout)
         #print(encoder_state_input.get_shape())
         word_res, f_state = tf.nn.dynamic_rnn(cell, inputs, dtype=tf.float32)
         #word_res, f_state = tf.nn.dynamic_rnn(cell, inputs,
@@ -90,6 +91,7 @@ class Decoder(object):
 
         with vs.variable_scope("decoder"):
             cell = tf.nn.rnn_cell.LSTMCell(self.hidden_size, use_peepholes=False)
+            cell = tf.nn.rnn_cell.DropoutWrapper(cell, output_keep_prob = 1.0 - FLAGS.dropout)
             word_res, _ = tf.nn.dynamic_rnn(cell, encode_out, initial_state=encode_fstate)
 
         # now I need a final classification layer
