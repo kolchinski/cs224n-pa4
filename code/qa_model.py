@@ -382,14 +382,8 @@ class QASystem(object):
         all_seqs = [x for x in all_seqs if len(x) <= FLAGS.max_length]
 
         def pad_spans(q, start, end):
-            if end < start:
-                end = start
-            pre = len(q) + 1 + start
-            center = end + 1 - start
-            post = FLAGS.max_length - (end + 1) - (len(q) + 1)
-            data = [0] * pre + [1] * center + [0]* post
-            assert(len(data) == FLAGS.max_length)
-            return data
+            q_pad = len(q) + 1
+            return self.selector_sequence(q_pad + start, q_pad + end, FLAGS.max_length)
 
         padded_spans = [pad_spans(q, start, end) for q, c, (start, end)
                         in zip(all_questions, all_contexts, all_spans)
@@ -405,6 +399,22 @@ class QASystem(object):
         train_size = int(len(all_qs) * .8)
         self.train_qas = all_qs[:train_size]
         self.dev_qas = all_qs[train_size:]
+
+    @staticmethod
+    def selector_sequence(start, end, total_len):
+        """
+        :param start: The first element to make 1
+        :param end: The last element to make 1 (can be the same as the start_1)
+        :return:
+        """
+        if end < start:
+            end = start
+        center = end + 1 - start
+        post = total_len - (end + 1)
+
+        data = [0] * start + [1] * center + [0] * post
+        assert(len(data) == FLAGS.max_length)
+        return data
 
 
     def build_batches(self, qas_set):
