@@ -6,7 +6,6 @@ download/*
 code/data/*
 code/download/*
 json
-log/
 logging
 os
 tf

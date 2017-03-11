@@ -1,0 +1,83 @@
+Created model with fresh parameters.
+Num params: 12123201
+Number of params: 12123201 (retrieval took 0.133235 secs)
+Epoch 1 out of 20
+
+F1: 0.0, EM: 0.0, for 100 samples
+0.0137374196202 mean prob; 0 total words predicted
+Epoch 2 out of 20
+
+F1: 0.0, EM: 0.0, for 100 samples
+0.0158019233495 mean prob; 0 total words predicted
+Epoch 3 out of 20
+
+F1: 0.0, EM: 0.0, for 100 samples
+0.01075915806 mean prob; 0 total words predicted
+Epoch 4 out of 20
+
+F1: 0.0, EM: 0.0, for 100 samples
+0.0174732860178 mean prob; 0 total words predicted
+Epoch 5 out of 20
+
+F1: 0.0, EM: 0.0, for 100 samples
+0.0111593883485 mean prob; 0 total words predicted
+Epoch 6 out of 20
+
+F1: 0.0, EM: 0.0, for 100 samples
+0.0163498036563 mean prob; 0 total words predicted
+Epoch 7 out of 20
+
+F1: 0.0, EM: 0.0, for 100 samples
+0.00954878982157 mean prob; 0 total words predicted
+Epoch 8 out of 20
+
+F1: 0.0510952380952, EM: 0.03, for 100 samples
+0.0133512560278 mean prob; 26 total words predicted
+Epoch 9 out of 20
+
+F1: 0.0738963802155, EM: 0.02, for 100 samples
+0.0157467387617 mean prob; 56 total words predicted
+Epoch 10 out of 20
+
+F1: 0.0719047619048, EM: 0.02, for 100 samples
+0.0115667246282 mean prob; 26 total words predicted
+Epoch 11 out of 20
+
+F1: 0.169240597036, EM: 0.06, for 100 samples
+0.0134141854942 mean prob; 77 total words predicted
+Epoch 12 out of 20
+
+F1: 0.189153846154, EM: 0.12, for 100 samples
+0.012964357622 mean prob; 100 total words predicted
+Epoch 13 out of 20
+
+F1: 0.263126395979, EM: 0.15, for 100 samples
+0.0129160135984 mean prob; 133 total words predicted
+Epoch 14 out of 20
+
+F1: 0.290932147563, EM: 0.18, for 100 samples
+0.013841339387 mean prob; 131 total words predicted
+Epoch 15 out of 20
+
+F1: 0.332167388167, EM: 0.21, for 100 samples
+0.0141950612888 mean prob; 149 total words predicted
+Epoch 16 out of 20
+
+F1: 0.292969979296, EM: 0.23, for 100 samples
+0.0126325637102 mean prob; 118 total words predicted
+Epoch 17 out of 20
+
+F1: 0.330112978525, EM: 0.22, for 100 samples
+0.0130615476519 mean prob; 123 total words predicted
+Epoch 18 out of 20
+
+F1: 0.209356245381, EM: 0.12, for 100 samples
+0.0110283177346 mean prob; 92 total words predicted
+Epoch 19 out of 20
+
+F1: 0.296016719995, EM: 0.16, for 100 samples
+0.0110499607399 mean prob; 130 total words predicted
+Epoch 20 out of 20
+
+F1: 0.301402011507, EM: 0.18, for 100 samples
+0.0152630638331 mean prob; 144 total words predicted
