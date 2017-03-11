@@ -1,25 +1,21 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 
 import random
 import time
 import logging
-
 import os
+
 import numpy as np
-from six.moves import xrange  # pylint: disable=redefined-builtin
+# from six.moves import xrange  # pylint: disable=redefined-builtin
 import tensorflow as tf
 from tensorflow.python.ops import variable_scope as vs
 
 from util import Progbar
-
 from evaluate import exact_match_score, f1_score
 
+
 logging.basicConfig(level=logging.INFO)
-
 FLAGS = tf.app.flags.FLAGS
-
 
 
 def get_optimizer(opt):
@@ -312,7 +308,7 @@ class QASystem(object):
         # don't need to remask this.
 
         f1s, ems = zip(*(self.eval_sentence(p, g, s)
-                         for p, g, s in zip(sent_vec, gold_spans, pred_spans)))
+                         for p, g, s in zip(pred_spans, gold_spans, sent_vec)))
 
         f1 = np.mean(f1s)
         em = np.mean(ems)
@@ -356,7 +352,7 @@ class QASystem(object):
     def run_epoch(self, sess, train):
         prog = Progbar(target=1 + int(len(train) / FLAGS.batch_size))
         losses = []
-        for i, batch in enumerate(self.build_batches(self.train_qas)):
+        for i, batch in enumerate(self.build_batches(self.train_qas)[:5]):
             #ques_con_seq, labels = zip(*b)
             loss = self.train_on_batch(sess, *zip(*batch))
             losses.append(loss)
@@ -373,7 +369,6 @@ class QASystem(object):
             loss = self.run_epoch(sess, train)
             losses.append(loss)
         return losses
-
 
     def process_dataset(self, dataset):
         #TODO: Batch up data, run loop over batches
@@ -432,7 +427,6 @@ class QASystem(object):
         data = [0] * start + [1] * center + [0] * post
         assert(len(data) == FLAGS.max_length)
         return data
-
 
     def build_batches(self, qas_set):
         """
