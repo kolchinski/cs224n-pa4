@@ -296,9 +296,17 @@ class QASystem(object):
         :return:
         """
         eval_set = random.sample(self.dev_qas, sample)
-        sent_vec, gold_spans, masks = zip(*eval_set)
+        sent_vec, gold_spans, context_spans = zip(*eval_set)
 
-        feed_dict = {self.input_placeholder: sent_vec}
+        seq_lengths = [e + 1 for (s,e) in context_spans]
+        masks = [ [0] * s + [1] * (e - s + 1) + [0] * (FLAGS.max_length - e - 1)
+            for (s,e) in context_spans]
+        masks = np.array(masks)
+
+        feed_dict = {self.input_placeholder: sent_vec,
+                     self.seq_lengths_placeholder: seq_lengths,
+                     self.mask_placeholder: masks}
+
         pred_probs, = session.run([self.results], feed_dict=feed_dict)
         pred_spans = [[int(round(m)) for m in n] for n in pred_probs]
         # don't need to remask this.

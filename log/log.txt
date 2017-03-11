@@ -1,0 +1,732 @@
+Created model with fresh parameters.
+Num params: 12123101
+Number of params: 12123101 (retreival took 0.172894 secs)
+Created model with fresh parameters.
+Num params: 12123101
+Number of params: 12123101 (retreival took 0.160935 secs)
+Created model with fresh parameters.
+Num params: 12123101
+Number of params: 12123101 (retreival took 0.228400 secs)
+Created model with fresh parameters.
+Num params: 12123101
+Number of params: 12123101 (retreival took 0.168443 secs)
+Created model with fresh parameters.
+Num params: 12123101
+Number of params: 12123101 (retreival took 0.161556 secs)
+Created model with fresh parameters.
+Num params: 12123101
+Number of params: 12123101 (retreival took 0.165392 secs)
+Created model with fresh parameters.
+Num params: 12123101
+Number of params: 12123101 (retreival took 0.159269 secs)
+Created model with fresh parameters.
+Num params: 12123101
+Number of params: 12123101 (retreival took 0.166154 secs)
+Created model with fresh parameters.
+Num params: 12123101
+Number of params: 12123101 (retreival took 0.159937 secs)
+Created model with fresh parameters.
+Num params: 12123101
+Number of params: 12123101 (retreival took 0.167275 secs)
+Created model with fresh parameters.
+Num params: 12123101
+Number of params: 12123101 (retreival took 0.160061 secs)
+Created model with fresh parameters.
+Num params: 12123101
+Number of params: 12123101 (retreival took 0.156551 secs)
+Created model with fresh parameters.
+Num params: 12123101
+Number of params: 12123101 (retreival took 0.197589 secs)
+Created model with fresh parameters.
+Num params: 12123101
+Number of params: 12123101 (retrieval took 0.179834 secs)
+Epoch 1 out of 10
+Created model with fresh parameters.
+Num params: 12123101
+Number of params: 12123101 (retrieval took 0.179025 secs)
+Epoch 1 out of 10
+Created model with fresh parameters.
+Num params: 12123101
+Number of params: 12123101 (retrieval took 0.254041 secs)
+Epoch 1 out of 10
+Created model with fresh parameters.
+Num params: 12123101
+Number of params: 12123101 (retrieval took 0.345779 secs)
+Epoch 1 out of 10
+F1: 0.0, EM: 0.0, for 100 samples
+F1: 0.0, EM: 0.0, for 100 samples
+F1: 0.0, EM: 0.0, for 100 samples
+F1: 0.0, EM: 0.0, for 100 samples
+F1: 0.0, EM: 0.0, for 100 samples
+F1: 0.0, EM: 0.0, for 100 samples
+F1: 0.0, EM: 0.0, for 100 samples
+F1: 0.0, EM: 0.0, for 100 samples
+Created model with fresh parameters.
+Num params: 12123101
+Number of params: 12123101 (retrieval took 0.219863 secs)
+Epoch 1 out of 10
+
+F1: 0.0, EM: 0.0, for 100 samples
+
+F1: 0.0, EM: 0.0, for 100 samples
+
+F1: 0.0, EM: 0.0, for 100 samples
+
+F1: 0.0, EM: 0.0, for 100 samples
+
+F1: 0.0, EM: 0.0, for 100 samples
+
+F1: 0.0, EM: 0.0, for 100 samples
+
+F1: 0.0, EM: 0.0, for 100 samples
+Created model with fresh parameters.
+Num params: 12123101
+Number of params: 12123101 (retrieval took 0.240456 secs)
+Epoch 1 out of 10
+
+F1: 0.0, EM: 0.0, for 100 samples
+
+F1: 0.0, EM: 0.0, for 100 samples
+
+F1: 0.0, EM: 0.0, for 100 samples
+Created model with fresh parameters.
+Num params: 12123101
+Number of params: 12123101 (retrieval took 0.211199 secs)
+Epoch 1 out of 10
+
+F1: 0.0, EM: 0.0, for 100 samples
+
+F1: 0.0, EM: 0.0, for 100 samples
+
+F1: 0.0, EM: 0.0, for 100 samples
+
+F1: 0.0, EM: 0.0, for 100 samples
+
+F1: 0.0, EM: 0.0, for 100 samples
+Created model with fresh parameters.
+Num params: 12123101
+Number of params: 12123101 (retrieval took 0.236830 secs)
+Epoch 1 out of 10
+
+F1: 0.0, EM: 0.0, for 100 samples
+
+F1: 0.0, EM: 0.0, for 100 samples
+Created model with fresh parameters.
+Num params: 12123101
+Number of params: 12123101 (retrieval took 0.212148 secs)
+Epoch 1 out of 10
+
+F1: 0.0, EM: 0.0, for 100 samples
+
+F1: 0.0, EM: 0.0, for 100 samples
+Created model with fresh parameters.
+Num params: 12123101
+Number of params: 12123101 (retrieval took 0.252609 secs)
+Epoch 1 out of 10
+Created model with fresh parameters.
+Num params: 12123101
+Number of params: 12123101 (retrieval took 0.226283 secs)
+Epoch 1 out of 10
+Created model with fresh parameters.
+Num params: 12123101
+Number of params: 12123101 (retrieval took 0.298975 secs)
+Epoch 1 out of 10
+
+F1: 0.0, EM: 0.0, for 100 samples
+
+F1: 0.0, EM: 0.0, for 100 samples
+
+F1: 0.0, EM: 0.0, for 100 samples
+
+F1: 0.0, EM: 0.0, for 100 samples
+
+F1: 0.0, EM: 0.0, for 100 samples
+
+F1: 0.0, EM: 0.0, for 100 samples
+Created model with fresh parameters.
+Num params: 12123101
+Number of params: 12123101 (retrieval took 0.229539 secs)
+Epoch 1 out of 10
+
+F1: 0.0, EM: 0.0, for 100 samples
+
+F1: 0.0, EM: 0.0, for 100 samples
+
+F1: 0.0, EM: 0.0, for 100 samples
+
+F1: 0.0, EM: 0.0, for 100 samples
+Created model with fresh parameters.
+Num params: 12123101
+Number of params: 12123101 (retrieval took 0.211706 secs)
+Epoch 1 out of 10
+
+F1: 0.000786099216806, EM: 0.0, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+Created model with fresh parameters.
+Num params: 12123101
+Number of params: 12123101 (retrieval took 0.211280 secs)
+Epoch 1 out of 10
+
+F1: 0.0, EM: 0.1, for 100 samples
+
+F1: 0.0, EM: 0.1, for 100 samples
+Created model with fresh parameters.
+Num params: 12123101
+Number of params: 12123101 (retrieval took 0.217019 secs)
+Epoch 1 out of 10
+
+F1: 0.0, EM: 0.08, for 100 samples
+
+F1: 0.0, EM: 0.08, for 100 samples
+
+F1: 0.0, EM: 0.08, for 100 samples
+
+F1: 0.0, EM: 0.08, for 100 samples
+Created model with fresh parameters.
+Num params: 12123101
+Number of params: 12123101 (retrieval took 0.213731 secs)
+Epoch 1 out of 10
+
+F1: 0.0, EM: 0.0, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+Created model with fresh parameters.
+Num params: 12123101
+Number of params: 12123101 (retrieval took 0.218729 secs)
+Epoch 1 out of 10
+
+F1: 0.0, EM: 0.08, for 100 samples
+Created model with fresh parameters.
+Num params: 12123101
+Number of params: 12123101 (retrieval took 0.218828 secs)
+Epoch 1 out of 10
+
+F1: 0.0, EM: 0.0, for 100 samples
+
+F1: 0.0, EM: 0.06, for 100 samples
+
+F1: 0.0, EM: 0.06, for 100 samples
+
+F1: 0.0, EM: 0.06, for 100 samples
+
+F1: 0.0, EM: 0.06, for 100 samples
+
+F1: 0.0, EM: 0.06, for 100 samples
+
+F1: 0.0, EM: 0.06, for 100 samples
+
+F1: 0.0, EM: 0.06, for 100 samples
+
+F1: 0.0, EM: 0.06, for 100 samples
+
+F1: 0.0, EM: 0.06, for 100 samples
+
+F1: 0.0, EM: 0.06, for 100 samples
+
+F1: 0.0, EM: 0.06, for 100 samples
+
+F1: 0.0, EM: 0.06, for 100 samples
+
+F1: 0.0, EM: 0.06, for 100 samples
+
+F1: 0.0, EM: 0.06, for 100 samples
+
+F1: 0.0, EM: 0.06, for 100 samples
+
+F1: 0.0, EM: 0.06, for 100 samples
+
+F1: 0.0, EM: 0.06, for 100 samples
+
+F1: 0.0, EM: 0.06, for 100 samples
+Created model with fresh parameters.
+Num params: 12123101
+Number of params: 12123101 (retrieval took 0.208063 secs)
+Epoch 1 out of 10
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+Created model with fresh parameters.
+Num params: 12123101
+Number of params: 12123101 (retrieval took 0.232845 secs)
+Epoch 1 out of 10
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+
+F1: 0.0, EM: 0.07, for 100 samples
+Created model with fresh parameters.
+Num params: 12123101
+Number of params: 12123101 (retrieval took 0.246721 secs)
+Epoch 1 out of 10
+
+F1: 0.0069543996023, EM: 0.0, for 100 samples
+
+F1: 0.0, EM: 0.06, for 100 samples
+
+F1: 0.0, EM: 0.06, for 100 samples
+Created model with fresh parameters.
+Num params: 12123101
+Number of params: 12123101 (retrieval took 0.184474 secs)
+Epoch 1 out of 10
+
+F1: 0.0, EM: 0.05, for 100 samples
+Created model with fresh parameters.
+Num params: 12123101
+Number of params: 12123101 (retrieval took 0.177656 secs)
+Epoch 1 out of 10
+
+F1: 0.0, EM: 0.12, for 100 samples
+
+F1: 0.0, EM: 0.12, for 100 samples
+
+F1: 0.0, EM: 0.12, for 100 samples
+Created model with fresh parameters.
+Num params: 12123101
+Number of params: 12123101 (retrieval took 0.196372 secs)
+Epoch 1 out of 10
+
+F1: 0.0, EM: 0.04, for 100 samples
+Created model with fresh parameters.
+Num params: 12123101
+Number of params: 12123101 (retrieval took 0.176953 secs)
+Epoch 1 out of 10
+
+F1: 0.0, EM: 0.01, for 100 samples
+
+F1: 0.0, EM: 0.03, for 100 samples
+
+F1: 0.0, EM: 0.03, for 100 samples
+Created model with fresh parameters.
+Num params: 12123101
+Number of params: 12123101 (retrieval took 0.175432 secs)
+Epoch 1 out of 10
+
+F1: 0.0, EM: 0.1, for 100 samples
+
+F1: 0.0, EM: 0.1, for 100 samples
+Created model with fresh parameters.
+Num params: 12123101
+Number of params: 12123101 (retrieval took 0.241126 secs)
+Epoch 1 out of 10
+
+F1: 0.00144393125079, EM: 0.0, for 100 samples
+Created model with fresh parameters.
+Num params: 12123101
+Number of params: 12123101 (retrieval took 0.276147 secs)
+Epoch 1 out of 10
+Created model with fresh parameters.
+Num params: 12123101
+Number of params: 12123101 (retrieval took 0.579305 secs)
+Epoch 1 out of 10
+Created model with fresh parameters.
+Num params: 12123101
+Number of params: 12123101 (retrieval took 0.586892 secs)
+Epoch 1 out of 10
+Created model with fresh parameters.
+Num params: 12123101
+Number of params: 12123101 (retrieval took 0.280075 secs)
+Epoch 1 out of 10
+Created model with fresh parameters.
+Num params: 12123201
+Number of params: 12123201 (retrieval took 0.488854 secs)
+Epoch 1 out of 10
+
+F1: 0.0, EM: 0.0, for 100 samples
+
+F1: 0.0, EM: 0.0, for 100 samples
+
+F1: 0.0, EM: 0.0, for 100 samples
+
+F1: 0.0, EM: 0.0, for 100 samples
+
+F1: 0.0, EM: 0.0, for 100 samples
+
+F1: 0.0, EM: 0.0, for 100 samples
+
+F1: 0.0, EM: 0.0, for 100 samples
+
+F1: 0.0, EM: 0.0, for 100 samples
+
+F1: 0.0, EM: 0.0, for 100 samples
+
+F1: 0.0, EM: 0.0, for 100 samples
+Created model with fresh parameters.
+Num params: 12123201
+Number of params: 12123201 (retrieval took 0.374420 secs)
+Epoch 1 out of 10
+Created model with fresh parameters.
+Num params: 12123201
+Number of params: 12123201 (retrieval took 0.213397 secs)
+Epoch 1 out of 10
+
+F1: 0.0, EM: 0.0, for 100 samples
+0 total words predicted
+
+F1: 0.0, EM: 0.0, for 100 samples
+0 total words predicted
+
+F1: 0.0, EM: 0.0, for 100 samples
+0 total words predicted
+
+F1: 0.0, EM: 0.0, for 100 samples
+0 total words predicted
+
+F1: 0.0, EM: 0.0, for 100 samples
+0 total words predicted
+
+F1: 0.0, EM: 0.0, for 100 samples
+0 total words predicted
+
+F1: 0.0, EM: 0.0, for 100 samples
+0 total words predicted
+
+F1: 0.0, EM: 0.0, for 100 samples
+0 total words predicted
+
+F1: 0.0, EM: 0.0, for 100 samples
+0 total words predicted
+
+F1: 0.0, EM: 0.0, for 100 samples
+0 total words predicted
+
+F1: 0.0, EM: 0.0, for 100 samples
+0 total words predicted
+
+F1: 0.0, EM: 0.0, for 100 samples
+0 total words predicted
+
+F1: 0.0, EM: 0.0, for 100 samples
+0 total words predicted
+
+F1: 0.0, EM: 0.0, for 100 samples
+0 total words predicted
+
+F1: 0.0, EM: 0.0, for 100 samples
+0 total words predicted
+
+F1: 0.0, EM: 0.0, for 100 samples
+0 total words predicted
+
+F1: 0.0, EM: 0.0, for 100 samples
+0 total words predicted
+Created model with fresh parameters.
+Num params: 12123201
+Number of params: 12123201 (retrieval took 0.292858 secs)
+Epoch 1 out of 10
+Created model with fresh parameters.
+Num params: 12123201
+Number of params: 12123201 (retrieval took 0.377906 secs)
+Epoch 1 out of 10
+
+F1: 0.0, EM: 0.0, for 100 samples
+0.00631032837555 mean prob; 0 total words predicted
+
+F1: 0.0, EM: 0.0, for 100 samples
+0.00052156590391 mean prob; 0 total words predicted
+
+F1: 0.0, EM: 0.0, for 100 samples
+0.000746382807847 mean prob; 0 total words predicted
+
+F1: 0.0, EM: 0.0, for 100 samples
+0.00154069950804 mean prob; 0 total words predicted
+
+F1: 0.0, EM: 0.0, for 100 samples
+0.00528919044882 mean prob; 0 total words predicted
+
+F1: 0.0, EM: 0.0, for 100 samples
+0.0092354323715 mean prob; 0 total words predicted
+
+F1: 0.0, EM: 0.0, for 100 samples
+0.0122393667698 mean prob; 0 total words predicted
+
+F1: 0.0, EM: 0.0, for 100 samples
+0.0154577083886 mean prob; 0 total words predicted
+
+F1: 0.0, EM: 0.0, for 100 samples
+0.0105001358315 mean prob; 0 total words predicted
+
+F1: 0.0, EM: 0.0, for 100 samples
+0.0133905094117 mean prob; 0 total words predicted
+
+F1: 0.0, EM: 0.0, for 100 samples
+0.015256870538 mean prob; 0 total words predicted
+
+F1: 0.0, EM: 0.0, for 100 samples
+0.0199228152633 mean prob; 0 total words predicted
+
+F1: 0.0, EM: 0.0, for 100 samples
+0.0121152587235 mean prob; 0 total words predicted
+
+F1: 0.0, EM: 0.0, for 100 samples
+0.0148135311902 mean prob; 0 total words predicted
+
+F1: 0.0, EM: 0.0, for 100 samples
+0.0134345823899 mean prob; 0 total words predicted
+
+F1: 0.0, EM: 0.0, for 100 samples
+0.0190580673516 mean prob; 0 total words predicted
+
+F1: 0.0, EM: 0.0, for 100 samples
+0.0170516222715 mean prob; 0 total words predicted
+
+F1: 0.0, EM: 0.0, for 100 samples
+0.0118050351739 mean prob; 0 total words predicted
+
+F1: 0.0, EM: 0.0, for 100 samples
+0.0172224398702 mean prob; 0 total words predicted
+
+F1: 0.0, EM: 0.0, for 100 samples
+0.0109577402472 mean prob; 0 total words predicted
+Created model with fresh parameters.
+Num params: 12123201
+Number of params: 12123201 (retrieval took 0.212331 secs)
+Epoch 1 out of 10
+Created model with fresh parameters.
+Num params: 12123201
+Number of params: 12123201 (retrieval took 0.204827 secs)
+Epoch 1 out of 10
+Created model with fresh parameters.
+Num params: 12123201
+Number of params: 12123201 (retrieval took 0.247999 secs)
+Epoch 1 out of 10
+Created model with fresh parameters.
+Num params: 12123201
+Number of params: 12123201 (retrieval took 0.258507 secs)
+Epoch 1 out of 10
+Created model with fresh parameters.
+Num params: 12123201
+Number of params: 12123201 (retrieval took 0.242020 secs)
+Epoch 1 out of 10
+Created model with fresh parameters.
+Num params: 12123201
+Number of params: 12123201 (retrieval took 0.243479 secs)
+Epoch 1 out of 10
+Created model with fresh parameters.
+Num params: 12123201
+Number of params: 12123201 (retrieval took 0.394881 secs)
+Epoch 1 out of 10
+Created model with fresh parameters.
+Num params: 12123201
+Number of params: 12123201 (retrieval took 0.424638 secs)
+Epoch 1 out of 10
+Created model with fresh parameters.
+Num params: 12123201
+Number of params: 12123201 (retrieval took 0.241459 secs)
+Epoch 1 out of 10
+Created model with fresh parameters.
+Num params: 12123201
+Number of params: 12123201 (retrieval took 0.256120 secs)
+Epoch 1 out of 10
