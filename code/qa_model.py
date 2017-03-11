@@ -37,7 +37,7 @@ class Encoder(object):
         self.size = size
         self.vocab_dim = vocab_dim
 
-    def encode(self, inputs, masks, encoder_state_input = None):
+    def encode(self, inputs, seq_lengths, encoder_state_input = None):
         """
         In a generalized encode function, you pass in your inputs,
         masks, and an initial
@@ -58,7 +58,6 @@ class Encoder(object):
         """
 
         # input_p = tf.placeholder(tf.float32, (FLAGS.batch_size, FLAGS.embedding_size))
-        seq_lengths = [e + 1 for (s,e) in masks]
         cell = tf.nn.rnn_cell.LSTMCell(self.size)
         cell = tf.nn.rnn_cell.DropoutWrapper(cell, output_keep_prob = 1.0 - FLAGS.dropout)
         #print(encoder_state_input.get_shape())
@@ -73,7 +72,7 @@ class Decoder(object):
         self.output_size = output_size
         self.hidden_size = hidden_size
 
-    def decode(self, knowledge_rep, masks):
+    def decode(self, knowledge_rep, seq_lengths, masks):
         """
         takes in a knowledge representation
         and output a probability estimation over
@@ -89,7 +88,6 @@ class Decoder(object):
         """
 
         encode_fstate, encode_out = knowledge_rep
-        seq_lengths = [e + 1 for (s,e) in masks]
 
         with vs.variable_scope("decoder"):
             cell = tf.nn.rnn_cell.LSTMCell(self.hidden_size, use_peepholes=False)
@@ -109,8 +107,8 @@ class Decoder(object):
         word_res = tf.nn.sigmoid(inner)
         word_res = tf.reshape(word_res, [-1, FLAGS.max_length])
 
-        #TODO: zero out irrelevant positions (before and after context) of predictions
-        word_res = word_res
+        #zero out irrelevant positions (before and after context) of predictions
+        word_res = word_res * masks
         return  word_res
 
 
@@ -132,7 +130,8 @@ class QASystem(object):
         # ==== set up placeholder tokens ========
         self.input_placeholder = tf.placeholder(tf.int32, (None, self.max_length))
         self.labels_placeholder = tf.placeholder(tf.float32, (None, self.max_length))
-        self.mask_placeholder = tf.placeholder(tf.bool, (None, self.max_length))
+        self.seq_lengths_placeholder = tf.placeholder(tf.int32, (None))
+        self.mask_placeholder = tf.placeholder(tf.float32, (None, self.max_length))
         self.dropout_placeholder = tf.placeholder(tf.float32, ())
 
 
@@ -156,8 +155,9 @@ class QASystem(object):
         #initial_hidden_h = tf.placeholder(tf.float32, (None, FLAGS.state_size))
         #initial_hidden = tf.nn.rnn_cell.LSTMStateTuple(initial_hidden_c, initial_hidden_h)
         #hidden_rep = self.encoder.encode(embeds, initial_hidden)
-        hidden_rep = self.encoder.encode(embeds, self.mask_placeholder)
-        res = self.decoder.decode(hidden_rep, self.mask_placeholder)
+
+        hidden_rep = self.encoder.encode(embeds, self.seq_lengths_placeholder)
+        res = self.decoder.decode(hidden_rep, self.seq_lengths_placeholder, self.mask_placeholder)
         return res
 
     def setup_loss(self, final_res):
@@ -328,12 +328,19 @@ class QASystem(object):
         em = exact_match_score(pred_sent, gold_sent)
         return f1, em
 
-    def train_on_batch(self, session, inputs_batch, labels_batch, masks_batch):
+    def train_on_batch(self, session, inputs_batch, labels_batch, context_spans_batch):
         """Perform one step of gradient descent on the provided batch of data.
         """
+
+        seq_lengths = [e + 1 for (s,e) in context_spans_batch]
+        masks = [ [0] * s + [1] * (e - s + 1) + [0] * (FLAGS.max_length - e - 1)
+            for (s,e) in context_spans_batch]
+        masks = np.array(masks)
+
         feed_dict = {self.input_placeholder: inputs_batch,
                      self.labels_placeholder: labels_batch,
-                     self.mask_placeholder: masks_batch}
+                     self.seq_lengths_placeholder: seq_lengths,
+                     self.mask_placeholder: masks}
         _, l = session.run([self.train_op, self.loss], feed_dict=feed_dict)
 
         return l
@@ -389,8 +396,10 @@ class QASystem(object):
                         in zip(all_questions, all_contexts, all_spans)
                         if len(q) + len(c) + 1 <= FLAGS.max_length]
 
-        seq_starts = [len(q) + 1 for q in all_questions]
-        seq_ends = [len(q) + len(c)  for (q,c) in zip(all_questions, all_contexts)]
+        seq_starts = [len(q) + 1 for (q,c) in zip(all_questions, all_contexts)
+                      if len(q) + 1 + len(c) <= FLAGS.max_length]
+        seq_ends = [len(q) + len(c)  for (q,c) in zip(all_questions, all_contexts)
+                    if len(q) + 1 + len(c) <= FLAGS.max_length]
         seq_spans = zip(seq_starts, seq_ends)
 
         all_qs = list(zip(all_seqs, padded_spans, seq_spans))
