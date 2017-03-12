@@ -108,6 +108,15 @@ class Decoder(object):
         word_res = word_res * masks
         return word_res
 
+    def decode_accum_layer(self, node_out):
+        """
+        :param node_out: Should be a 3d tensor [batch, num_nodes, word_rep]
+        :return: prediction tensor [batch, num_nodes
+        Consider a window based model.
+        Other stuff: note that we already do a shit ton of convolution and pooling,
+        another layer wouldn't be that useful.
+        """
+
     def decode_arbitration_layer(self, word_res, masks):
         # If we are doing masking, we should also mask before this.
         # that way the nn gets an accurate assessment of the actual probs

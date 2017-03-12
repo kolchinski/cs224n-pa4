@@ -132,9 +132,7 @@ class QASepSystem(qa_model.QASystem):
         # ==== assemble pieces ====
         with tf.variable_scope("qa", initializer=tf.uniform_unit_scaling_initializer(1.0)):
             #TODO: fix the embeddings
-            q_embeds = self.setup_embeddings()
-            c_embeds = self.setup_embeddings()
-
+            embeds = self.setup_embeddings()
             self.results = self.setup_system(embeds)
             self.loss = self.setup_loss(self.results)
 
@@ -159,18 +157,13 @@ class QASepSystem(qa_model.QASystem):
         ### END YOUR CODE
         return {"q": q_embed, "ctx": ctx_embed}
 
-
     def setup_system(self, embeds):
-
-        #TODO: Update this to use the new encoder and decoder; also update the needed helper functions like for embed
         #def encode(self, qs, q_lens, cs, c_lens, dropout):
         hidden_rep = self.encoder.encode(embeds["q"], self.q_lengths_placeholder, embeds["ctx"],
                                          self.c_lengths_placeholder, self.dropout_placeholder)
         res = self.decoder.decode(hidden_rep, self.seq_lengths_placeholder, self.mask_placeholder,
                                   self.dropout_placeholder)
         return res
-
-
 
     def process_dataset(self, dataset, max_q_length=None, max_c_length=None):
         self.train_contexts = all_cs = dataset['contexts']
@@ -228,7 +221,6 @@ class QASepSystem(qa_model.QASystem):
                      self.dropout_placeholder: dropout,
                      self.mask_placeholder: masks}
         return feed_dict
-
 
     def evaluate_answer(self, session, sample=500, log=True):
         eval_set = random.sample(self.dev_qas, sample)
