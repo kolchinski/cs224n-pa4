@@ -150,24 +150,22 @@ class QASepSystem(qa_model.QASystem):
         with open(embed_path, "rb") as f:
             self.pretrained_embeddings = np.load(f)['glove']
 
-        self.boundary_token = np.random.randn(1, FLAGS.embedding_size)
-        self.pretrained_embeddings = np.append(self.pretrained_embeddings, self.boundary_token, axis=0)
-        self.boundary_token_index = len(self.pretrained_embeddings) - 1
-
         # We now need to set up the tensorflow emedding
 
         embed = tf.Variable(self.pretrained_embeddings, dtype=tf.float32)
-        embeddings = tf.nn.embedding_lookup(embed, self.input_placeholder)
-        # embeddings = tf.reshape(extracted, (-1, self.max_length, FLAGS.embed_size))
+        q_embed = tf.nn.embedding_lookup(embed, self.q_placeholder)
+        ctx_embed = tf.nn.embedding_lookup(embed, self.ctx_placeholder)
+
         ### END YOUR CODE
-        return embeddings
+        return {"q": q_embed, "ctx": ctx_embed}
 
 
     def setup_system(self, embeds):
 
         #TODO: Update this to use the new encoder and decoder; also update the needed helper functions like for embed
         #def encode(self, qs, q_lens, cs, c_lens, dropout):
-        hidden_rep = self.encoder.encode(embeds, self.seq_lengths_placeholder, self.dropout_placeholder)
+        hidden_rep = self.encoder.encode(embeds["q"], self.q_lengths_placeholder, embeds["ctx"],
+                                         self.c_lengths_placeholder, self.dropout_placeholder)
         res = self.decoder.decode(hidden_rep, self.seq_lengths_placeholder, self.mask_placeholder,
                                   self.dropout_placeholder)
         return res
