@@ -51,9 +51,50 @@ class BiEncoder(object):
         c_outputs_fw, c_outputs_bw = c_outputs
         c_states_fw, c_states_bw = c_states
 
-        return q_outputs, c_outputs
+        return q_outputs, q_states, c_outputs, c_states
 
 
+#Take in the output of the BiEncoder and turn it into a vector of probabilities
+class NaiveBiDecoder(object):
+    def __init__(self, output_size, hidden_size):
+        self.output_size = output_size
+        self.hidden_size = hidden_size
+
+    def decode(self, init_state, inputs, input_lens, masks, dropout):
+        init_state_fw, init_state_bw = init_state
+        max_len = tf.shape(inputs)[1]
+
+        with vs.variable_scope("decoder"):
+            cell = tf.nn.rnn_cell.LSTMCell(self.hidden_size, use_peepholes=False)
+            cell = tf.nn.rnn_cell.DropoutWrapper(cell, output_keep_prob = 1.0 - dropout)
+            outputs, states = tf.nn.bidirectional_dynamic_rnn(
+                cell_fw=cell,
+                cell_bw=cell,
+                dtype=tf.float32,
+                sequence_length=input_lens,
+                inputs=inputs,
+                initial_state_bw=init_state_bw,
+                initial_state_fw=init_state_fw)
+            outputs_fw, outputs_bw = outputs
+
+
+        xav_init = tf.contrib.layers.xavier_initializer()
+
+        w = tf.get_variable("W_final", (2*self.hidden_size, 1), tf.float32, xav_init)
+        b = tf.get_variable("b_final", (1,), tf.float32, tf.constant_initializer(0.0))
+
+        #Fix this - need to stack forward and backward outputs
+        word_res_fw = tf.reshape(outputs_fw, [-1, self.hidden_size])
+        word_res_bw = tf.reshape(outputs_bw, [-1, self.hidden_size])
+        word_res = tf.concat(1, word_res_fw, word_res_bw)
+
+        inner = tf.matmul(word_res, w) + b
+        word_res = tf.nn.sigmoid(inner)
+        word_res = tf.reshape(word_res, [-1, max_len)
+
+        #zero out irrelevant positions (before and after context) of predictions
+        word_res = word_res * masks
+        return  word_res
 
 
 
@@ -93,6 +134,17 @@ class QASepSystem(qa_model.QASystem):
 
         # ==== set up training/updating procedure ====
         self.train_op = tf.train.AdamOptimizer(FLAGS.learning_rate).minimize(self.loss)
+
+    def setup_system(self, embeds):
+
+        #TODO: Update this to use the new encoder and decoder; also update the needed helper functions like for embed
+        #def encode(self, qs, q_lens, cs, c_lens, dropout):
+        hidden_rep = self.encoder.encode(embeds, self.seq_lengths_placeholder, self.dropout_placeholder)
+        res = self.decoder.decode(hidden_rep, self.seq_lengths_placeholder, self.mask_placeholder,
+                                  self.dropout_placeholder)
+        return res
+
+
 
     def process_dataset(self, dataset, max_q_length=None, max_c_length=None):
         self.train_contexts = all_cs = dataset['contexts']
