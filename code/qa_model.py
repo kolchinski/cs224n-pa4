@@ -104,8 +104,20 @@ class Decoder(object):
         word_res = tf.reshape(word_res, [-1, FLAGS.max_length])
 
         #zero out irrelevant positions (before and after context) of predictions
+        word_res = self.decode_arbitration_layer(word_res, masks)
         word_res = word_res * masks
-        return  word_res
+        return word_res
+
+    def decode_arbitration_layer(self, word_res, masks):
+        # If we are doing masking, we should also mask before this.
+        # that way the nn gets an accurate assessment of the actual probs
+        masked_wr = word_res * masks
+        xav_init = tf.contrib.layers.xavier_initializer()
+        w = tf.get_variable("W_arb", [FLAGS.max_length, FLAGS.max_length], tf.float32, xav_init)
+        b = tf.get_variable("B_arb", [FLAGS.max_length], tf.float32, tf.constant_initializer(0.0))
+        inner = tf.matmul(masked_wr, w) + b
+        return tf.nn.sigmoid(inner)
+
 
 
 class QASystem(object):
