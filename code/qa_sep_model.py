@@ -2,6 +2,8 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 import random
+import os
+
 import tensorflow as tf
 import numpy as np
 
@@ -100,30 +102,27 @@ class NaiveBiDecoder(object):
         return  word_res
 
 
-
 class QASepSystem(qa_model.QASystem):
+    def __init__(self, input_size, hidden_size, output_size, *args):
+        self.in_size = input_size
+        self.out_size = output_size
+        self.encoder = BiEncoder(hidden_size, input_size)
+        self.decoder = NaiveBiDecoder(output_size, hidden_size)
 
-    def __init__(self, encoder, decoder, *args):
-        self.encoder = encoder
-        self.decoder = decoder
-        self.max_length = FLAGS.max_length
-
-        #TODO: Define question max_length and ctx max_length
-
-
+    def build_pipeline(self):
         # ==== set up placeholder tokens ========
         # Question and context sequences
-        self.q_placeholder = tf.placeholder(tf.int32, (None, self.max_length))
-        self.ctx_placeholder = tf.placeholder(tf.int32, (None, self.max_length))
+        self.q_placeholder = tf.placeholder(tf.int32, (None, self.max_q_len))
+        self.ctx_placeholder = tf.placeholder(tf.int32, (None, self.max_c_len))
 
-        self.q_lengths_placeholder = tf.placeholder(tf.int32, (None, self.max_length))
-        self.c_lengths_placeholder = tf.placeholder(tf.int32, (None, self.max_length))
+        self.q_lengths_placeholder = tf.placeholder(tf.int32, (None, self.max_q_len))
+        self.c_lengths_placeholder = tf.placeholder(tf.int32, (None, self.max_c_len))
 
         # True 1/0 labelings of words in the context
-        self.labels_placeholder = tf.placeholder(tf.float32, (None, self.max_length))
+        self.labels_placeholder = tf.placeholder(tf.float32, (None, self.max_c_len))
 
         # 1/0 mask to ignore padding in context for loss purposes
-        self.mask_placeholder = tf.placeholder(tf.bool, (None, self.max_length))
+        self.mask_placeholder = tf.placeholder(tf.bool, (None, self.max_c_len))
 
         # Proportion of connections to drop
         self.dropout_placeholder = tf.placeholder(tf.float32, ())
@@ -172,8 +171,8 @@ class QASepSystem(qa_model.QASystem):
         self.vocab = dataset['vocab']
         assert(len(self.vocab) == len(self.pretrained_embeddings))
 
-        pad_qs = self.pad_vocab_ids(all_qs, max_q_length)
-        pad_ctxs = self.pad_vocab_ids(all_cs, max_c_length)
+        pad_qs, self.max_q_len = self.pad_and_max_len(all_qs)
+        pad_ctxs, self.max_c_len = self.pad_vocab_ids(all_cs)
 
         if max_c_length:
             all_spans = (s for s in all_spans if len(s) <= max_c_length)
@@ -199,6 +198,11 @@ class QASepSystem(qa_model.QASystem):
             seqs = (s for s in seqs if len(s) <= max_len)
         return [s + (max_len - len(s)) * [0] for s in seqs]
 
+    @staticmethod
+    def pad_and_max_len(seqs):
+        max_len = max((len(s) for s in seqs))
+        return [s + (max_len - len(s)) * [0] for s in seqs], max_len
+
     def train_on_batch(self, session, batch_data):
         """Perform one step of gradient descent on the provided batch of data.
         """
@@ -210,7 +214,7 @@ class QASepSystem(qa_model.QASystem):
     def prepare_data(self, data, dropout=0):
         q_batch, ctx_batch, labels_batch, context_spans_batch = data
         q_lens, c_lens = zip(*context_spans_batch)
-        masks = [self.selector_sequence(0, c, self.max_length)  for c in c_lens]
+        masks = [self.selector_sequence(0, c, self.max_c_len)  for c in c_lens]
 
         feed_dict = {self.q_placeholder: q_batch,
                      self.ctx_placeholder: ctx_batch,

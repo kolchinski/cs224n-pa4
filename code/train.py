@@ -7,7 +7,8 @@ import json
 
 import tensorflow as tf
 
-from qa_model import Encoder, QASystem, Decoder
+# from qa_model import Encoder, QASystem, Decoder
+from qa_sep_model import QASepSystem
 from os.path import join as pjoin
 
 import logging
@@ -99,16 +100,15 @@ def main(_):
     vocab, rev_vocab = initialize_vocab(vocab_path)
 
     print("Building encoder and decoder")
-    encoder = Encoder(size=FLAGS.state_size, vocab_dim=FLAGS.embedding_size)
-    decoder = Decoder(output_size=FLAGS.output_size, hidden_size=FLAGS.state_size)
 
     print("Building QASystem")
-    qa = QASystem(encoder, decoder)
+    qa = QASepSystem(FLAGS.embedding_size, FLAGS.state_size, FLAGS.output_size)
 
     with open(os.path.join(FLAGS.data_dir, 'vocab.dat'), "rb") as f:
         vocab = [str(l).strip() for l in f.readlines()]
 
     process_training(qa, vocab)
+    qa.build_pipeline()
 
     if not os.path.exists(FLAGS.log_dir):
         os.makedirs(FLAGS.log_dir)
