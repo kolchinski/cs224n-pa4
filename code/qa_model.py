@@ -352,7 +352,7 @@ class QASystem(object):
     def run_epoch(self, sess, train):
         prog = Progbar(target=1 + int(len(train) / FLAGS.batch_size))
         losses = []
-        for i, batch in enumerate(self.build_batches(self.train_qas)[:5]):
+        for i, batch in enumerate(self.build_batches(self.train_qas)):
             #ques_con_seq, labels = zip(*b)
             loss = self.train_on_batch(sess, *zip(*batch))
             losses.append(loss)
