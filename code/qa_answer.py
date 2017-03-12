@@ -38,6 +38,7 @@ tf.app.flags.DEFINE_string("log_dir", "log", "Path to store log and flag files (
 tf.app.flags.DEFINE_string("vocab_path", "data/squad/vocab.dat", "Path to vocab file (default: ./data/squad/vocab.dat)")
 tf.app.flags.DEFINE_string("embed_path", "", "Path to the trimmed GLoVe embedding (default: ./data/squad/glove.trimmed.{embedding_size}.npz)")
 tf.app.flags.DEFINE_string("dev_path", "data/squad/dev-v1.1.json", "Path to the JSON dev set to evaluate against (default: ./data/squad/dev-v1.1.json)")
+tf.app.flags.DEFINE_string("output_path", "results/{:%Y%m%d_%H%M%S}/".format(datetime.now()))
 
 def initialize_model(session, model, train_dir):
     ckpt = tf.train.get_checkpoint_state(train_dir)

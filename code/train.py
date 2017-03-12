@@ -33,6 +33,7 @@ tf.app.flags.DEFINE_integer("print_every", 1, "How many iterations to do per pri
 tf.app.flags.DEFINE_integer("keep", 0, "How many checkpoints to keep, 0 indicates keep all.")
 tf.app.flags.DEFINE_string("vocab_path", "data/squad/vocab.dat", "Path to vocab file (default: ./data/squad/vocab.dat)")
 tf.app.flags.DEFINE_string("embed_path", "", "Path to the trimmed GLoVe embedding (default: ./data/squad/glove.trimmed.{embedding_size}.npz)")
+tf.app.flags.DEFINE_string("output_path", "results/{:%Y%m%d_%H%M%S}/".format(datetime.now()))
 
 tf.app.flags.DEFINE_string("max_length", 250, "Length of longest context we'll use")
 

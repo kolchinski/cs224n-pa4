@@ -365,11 +365,12 @@ class QASystem(object):
         return losses
 
 
-    def fit(self, sess, train):
+    def fit(self, sess, saver, train):
         losses = []
         for epoch in range(FLAGS.epochs):
             logging.info("Epoch %d out of %d", epoch + 1, FLAGS.epochs)
             loss = self.run_epoch(sess, train)
+            saver.save(sess, FLAGS.output_path)
             losses.append(loss)
         return losses
 
@@ -484,11 +485,12 @@ class QASystem(object):
         logging.info("Number of params: %d (retrieval took %f secs)" % (num_params, toc - tic))
 
         initializer = tf.global_variables_initializer()
+        saver = tf.train.Saver()
         session.run(initializer)
         print("Session initialized, starting training")
 
         print("Start train function")
-        losses = self.fit(session, self.train_qas)
+        losses = self.fit(session, saver, self.train_qas)
 
         #for b_num, b in enumerate(batches):
         #    if b_num % 100 == 0:
