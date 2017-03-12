@@ -108,7 +108,6 @@ class Decoder(object):
         return  word_res
 
 
-
 class QASystem(object):
     def __init__(self, encoder, decoder, *args):
         """
@@ -251,11 +250,12 @@ class QASystem(object):
         em = exact_match_score(pred_sent, gold_sent)
         return f1, em
 
-    def train_on_batch(self, session, inputs_batch, labels_batch, context_spans_batch):
+    def train_on_batch(self, session, batch_data):
         """Perform one step of gradient descent on the provided batch of data.
         """
 
-        seq_lengths = [e + 1 for (s,e) in context_spans_batch]
+        inputs_batch, labels_batch, context_spans_batch = batch_data
+        seq_lengths = [e + 1 for (s, e) in context_spans_batch]
         masks = [ [0] * s + [1] * (e - s + 1) + [0] * (FLAGS.max_length - e - 1)
             for (s,e) in context_spans_batch]
         masks = np.array(masks)
@@ -274,13 +274,12 @@ class QASystem(object):
         losses = []
         for i, batch in enumerate(self.build_batches(self.train_qas)):
             #ques_con_seq, labels = zip(*b)
-            loss = self.train_on_batch(sess, *zip(*batch))
+            loss = self.train_on_batch(sess, zip(*batch))
             losses.append(loss)
             prog.update(i + 1, [("train loss", loss)])
         f1, em = self.evaluate_answer(sess, log=True)
 
         return losses
-
 
     def fit(self, sess, saver, train):
         losses = []
@@ -292,14 +291,12 @@ class QASystem(object):
         return losses
 
     def process_dataset(self, dataset):
-        #TODO: Batch up data, run loop over batches
         all_contexts = dataset['contexts']
         all_questions = dataset['questions']
         all_spans = dataset['spans']
         self.vocab = dataset['vocab']
         self.vocab.append("<SEP>")
         assert(len(self.vocab) == len(self.pretrained_embeddings))
-        #Adding separator to the vocab, should ideally be done during model setup but oh well
 
         self.train_contexts = all_contexts
         self.train_questions = all_questions

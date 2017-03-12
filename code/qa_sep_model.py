@@ -114,8 +114,7 @@ class QASepSystem(qa_model.QASystem):
         padded_spans = [self.selector_sequence(start, end, max_c_length)
                         for start, end in all_spans]
 
-        seq_ends = [len(c) for c in zip(all_cs)]
-
+        seq_ends = [(len(c), len(q)) for c, q in zip(all_cs, all_qs)]
         all_qs = list(zip(pad_qs, pad_ctxs, padded_spans, seq_ends))
         # random.shuffle(all_qs)  # change the train/validation set from run to run
 
@@ -131,13 +130,32 @@ class QASepSystem(qa_model.QASystem):
             seqs = (s for s in seqs if len(s) <= max_len)
         return [s + (max_len - len(s)) * [0] for s in seqs]
 
+    def train_on_batch(self, session, batch_data):
+        """Perform one step of gradient descent on the provided batch of data.
+        """
+
+        q_batch, ctx_batch, labels_batch, context_spans_batch = batch_data
+        seq_lengths = [e + 1 for (s, e) in context_spans_batch]
+        masks = [[0] * s + [1] * (e - s + 1) + [0] * (FLAGS.max_length - e - 1)
+                  for (s, e) in context_spans_batch]
+        masks = np.array(masks)
+
+        feed_dict = {self.ques_placeholder: q_batch,
+                    self.ctx_placeholder: ctx_batch,
+                     self.labels_placeholder: labels_batch,
+                     self.seq_lengths_placeholder: seq_lengths,
+                     self.mask_placeholder: masks}
+        _, l = session.run([self.train_op, self.loss], feed_dict=feed_dict)
+
+        return l
+
     def evaluate_answer(self, session, sample=500, log=True):
         eval_set = random.sample(self.dev_qas, sample)
         q_vec, ctx_vec, gold_spans, masks = zip(*eval_set)
 
         feed_dict = {self.ques_placeholder: q_vec, self.ctx_placeholder: ctx_vec}
         pred_probs, = session.run([self.results], feed_dict=feed_dict)
-        pred_spans = [[int(round(m)) for m in n] for n in pred_probs]
+        pred_spans = [[int(m > 0.5) for m in n] for n in pred_probs]
 
         f1s, ems = zip(*(self.eval_sentence(p, g, s)
                          for p, g, s in zip(ctx_vec, gold_spans, pred_spans)))
