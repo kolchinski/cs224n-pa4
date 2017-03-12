@@ -37,7 +37,7 @@ class Encoder(object):
         self.size = size
         self.vocab_dim = vocab_dim
 
-    def encode(self, inputs, seq_lengths, encoder_state_input = None):
+    def encode(self, inputs, seq_lengths, dropout, encoder_state_input = None):
         """
         In a generalized encode function, you pass in your inputs,
         masks, and an initial
@@ -59,7 +59,7 @@ class Encoder(object):
 
         # input_p = tf.placeholder(tf.float32, (FLAGS.batch_size, FLAGS.embedding_size))
         cell = tf.nn.rnn_cell.LSTMCell(self.size)
-        cell = tf.nn.rnn_cell.DropoutWrapper(cell, output_keep_prob = 1.0 - FLAGS.dropout)
+        cell = tf.nn.rnn_cell.DropoutWrapper(cell, output_keep_prob = 1.0 - dropout)
         #print(encoder_state_input.get_shape())
         word_res, f_state = tf.nn.dynamic_rnn(cell, inputs, sequence_length=seq_lengths, dtype=tf.float32)
         #word_res, f_state = tf.nn.dynamic_rnn(cell, inputs,
@@ -72,7 +72,7 @@ class Decoder(object):
         self.output_size = output_size
         self.hidden_size = hidden_size
 
-    def decode(self, knowledge_rep, seq_lengths, masks):
+    def decode(self, knowledge_rep, seq_lengths, masks, dropout):
         """
         takes in a knowledge representation
         and output a probability estimation over
@@ -91,7 +91,7 @@ class Decoder(object):
 
         with vs.variable_scope("decoder"):
             cell = tf.nn.rnn_cell.LSTMCell(self.hidden_size, use_peepholes=False)
-            cell = tf.nn.rnn_cell.DropoutWrapper(cell, output_keep_prob = 1.0 - FLAGS.dropout)
+            cell = tf.nn.rnn_cell.DropoutWrapper(cell, output_keep_prob = 1.0 - dropout)
             word_res, _ = tf.nn.dynamic_rnn(cell, encode_out, sequence_length=seq_lengths, initial_state=encode_fstate)
 
         # now I need a final classification layer
@@ -156,8 +156,9 @@ class QASystem(object):
         #initial_hidden = tf.nn.rnn_cell.LSTMStateTuple(initial_hidden_c, initial_hidden_h)
         #hidden_rep = self.encoder.encode(embeds, initial_hidden)
 
-        hidden_rep = self.encoder.encode(embeds, self.seq_lengths_placeholder)
-        res = self.decoder.decode(hidden_rep, self.seq_lengths_placeholder, self.mask_placeholder)
+        hidden_rep = self.encoder.encode(embeds, self.seq_lengths_placeholder, self.dropout_placeholder)
+        res = self.decoder.decode(hidden_rep, self.seq_lengths_placeholder, self.mask_placeholder,
+                                  self.dropout_placeholder)
         return res
 
     def setup_loss(self, final_res):
@@ -305,7 +306,8 @@ class QASystem(object):
 
         feed_dict = {self.input_placeholder: sent_vec,
                      self.seq_lengths_placeholder: seq_lengths,
-                     self.mask_placeholder: masks}
+                     self.mask_placeholder: masks,
+                     self.dropout_placeholder: 0}
 
         pred_probs, = session.run([self.results], feed_dict=feed_dict)
         pred_spans = [[int(round(m)) for m in n] for n in pred_probs]
@@ -348,7 +350,8 @@ class QASystem(object):
         feed_dict = {self.input_placeholder: inputs_batch,
                      self.labels_placeholder: labels_batch,
                      self.seq_lengths_placeholder: seq_lengths,
-                     self.mask_placeholder: masks}
+                     self.mask_placeholder: masks,
+                     self.dropout_placeholder: FLAGS.dropout}
         _, l = session.run([self.train_op, self.loss], feed_dict=feed_dict)
 
         return l

@@ -730,3 +730,11 @@ Created model with fresh parameters.
 Num params: 12123201
 Number of params: 12123201 (retrieval took 0.256120 secs)
 Epoch 1 out of 10
+Created model with fresh parameters.
+Num params: 12123201
+Number of params: 12123201 (retrieval took 0.260464 secs)
+Epoch 1 out of 25
+Created model with fresh parameters.
+Num params: 12123201
+Number of params: 12123201 (retrieval took 0.235522 secs)
+Epoch 1 out of 25
