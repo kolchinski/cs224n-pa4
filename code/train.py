@@ -105,7 +105,7 @@ def main(_):
     qa = QASystem(encoder, decoder)
 
     with open(os.path.join(FLAGS.data_dir, 'vocab.dat'), "rb") as f:
-        vocab = [l.strip() for l in f.readlines()]
+        vocab = [str(l).strip() for l in f.readlines()]
 
     process_training(qa, vocab)
 

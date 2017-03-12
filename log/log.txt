@@ -732,9 +732,31 @@ Number of params: 12123201 (retrieval took 0.256120 secs)
 Epoch 1 out of 10
 Created model with fresh parameters.
 Num params: 12123201
-Number of params: 12123201 (retrieval took 0.260464 secs)
+Number of params: 12123201 (retrieval took 0.710848 secs)
 Epoch 1 out of 25
 Created model with fresh parameters.
 Num params: 12123201
-Number of params: 12123201 (retrieval took 0.235522 secs)
+Number of params: 12123201 (retrieval took 0.608543 secs)
 Epoch 1 out of 25
+Created model with fresh parameters.
+Num params: 12123201
+Number of params: 12123201 (retrieval took 0.600001 secs)
+Epoch 1 out of 25
+Created model with fresh parameters.
+Num params: 12123201
+Number of params: 12123201 (retrieval took 0.619289 secs)
+Epoch 1 out of 25
+
+F1: 0.05101588069474252, EM: 0.0, for 500 samples
+0.00045139819849282503 mean prob; 0 total words predicted
+Created model with fresh parameters.
+Num params: 12123201
+Number of params: 12123201 (retrieval took 0.739700 secs)
+Epoch 1 out of 25
+Created model with fresh parameters.
+Num params: 12123201
+Number of params: 12123201 (retrieval took 0.617784 secs)
+Epoch 1 out of 25
+
+F1: 0.0, EM: 0.0, for 500 samples
+0.0001458467449992895 mean prob; 0 total words predicted
