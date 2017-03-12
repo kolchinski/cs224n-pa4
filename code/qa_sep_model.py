@@ -29,28 +29,30 @@ class BiEncoder(object):
         cell = tf.nn.rnn_cell.DropoutWrapper(cell, output_keep_prob = 1.0 - dropout)
 
         #Run the first BiLSTM on the questions
-        q_outputs, q_states = tf.nn.bidirectional_dynamic_rnn(
-            cell_fw=cell,
-            cell_bw=cell,
-            dtype=tf.float32,
-            sequence_length=q_lens,
-            inputs=qs)
+        with tf.variable_scope("ques"):
+            q_outputs, q_states = tf.nn.bidirectional_dynamic_rnn(
+                cell_fw=cell,
+                cell_bw=cell,
+                dtype=tf.float32,
+                sequence_length=q_lens,
+                inputs=qs)
 
         q_states_fw, q_states_bw = q_states
 
 
         #Run the second BiLSTM on the contexts, starting with the hidden states from the question BiLSTM
-        c_outputs, c_states = tf.nn.bidirectional_dynamic_rnn(
-            cell_fw=cell,
-            cell_bw=cell,
-            dtype=tf.float32,
-            sequence_length=c_lens,
-            inputs=cs,
-            initial_state_bw=q_states_bw,
-            initial_state_fw=q_states_fw)
+        with tf.variable_scope("c_en"):
+            c_outputs, c_states = tf.nn.bidirectional_dynamic_rnn(
+                cell_fw=cell,
+                cell_bw=cell,
+                dtype=tf.float32,
+                sequence_length=c_lens,
+                inputs=cs,
+                initial_state_bw=q_states_bw,
+                initial_state_fw=q_states_fw)
 
-        c_outputs_fw, c_outputs_bw = c_outputs
-        c_states_fw, c_states_bw = c_states
+            c_outputs_fw, c_outputs_bw = c_outputs
+            c_states_fw, c_states_bw = c_states
 
         return q_outputs, q_states, c_outputs, c_states
 
@@ -211,27 +213,30 @@ class QASepSystem(qa_model.QASystem):
         """Perform one step of gradient descent on the provided batch of data.
         """
 
-        q_batch, ctx_batch, labels_batch, context_spans_batch = batch_data
+        feed_dict = self.prepare_data(batch_data, dropout=FLAGS.dropout)
+        _, l = session.run([self.train_op, self.loss], feed_dict=feed_dict)
+        return l
+
+    def prepare_data(self, data, dropout=0):
+        q_batch, ctx_batch, labels_batch, context_spans_batch = data
         q_lens, c_lens = zip(*context_spans_batch)
-        masks = [[0] * s + [1] * (e - s + 1) + [0] * (FLAGS.max_length - e - 1)
-                  for (s, e) in context_spans_batch]
-        masks = np.array(masks)
+        masks = [self.selector_sequence(0, c, self.max_length)  for c in c_lens]
 
         feed_dict = {self.q_placeholder: q_batch,
                      self.ctx_placeholder: ctx_batch,
                      self.labels_placeholder: labels_batch,
                      self.q_lengths_placeholder: q_lens,
                      self.c_lengths_placeholder: c_lens,
+                     self.dropout_placeholder: dropout,
                      self.mask_placeholder: masks}
-        _, l = session.run([self.train_op, self.loss], feed_dict=feed_dict)
+        return feed_dict
 
-        return l
 
     def evaluate_answer(self, session, sample=500, log=True):
         eval_set = random.sample(self.dev_qas, sample)
         q_vec, ctx_vec, gold_spans, masks = zip(*eval_set)
 
-        feed_dict = {self.q_placeholder: q_vec, self.ctx_placeholder: ctx_vec}
+        feed_dict = self.prepare_data(eval_set)
         pred_probs, = session.run([self.results], feed_dict=feed_dict)
         pred_spans = [[int(m > 0.5) for m in n] for n in pred_probs]
 
