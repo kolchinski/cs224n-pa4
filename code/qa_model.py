@@ -364,7 +364,6 @@ class QASystem(object):
         post = total_len - (end + 1)
 
         data = [0] * start + [1] * center + [0] * post
-        assert(len(data) == FLAGS.max_length)
         return data
 
     def build_batches(self, qas_set):

@@ -169,10 +169,9 @@ class QASepSystem(qa_model.QASystem):
         self.train_questions = all_qs = dataset['questions']
         self.train_spans = all_spans = dataset['spans']
         self.vocab = dataset['vocab']
-        assert(len(self.vocab) == len(self.pretrained_embeddings))
 
         pad_qs, self.max_q_len = self.pad_and_max_len(all_qs)
-        pad_ctxs, self.max_c_len = self.pad_vocab_ids(all_cs)
+        pad_ctxs, self.max_c_len = self.pad_and_max_len(all_cs)
 
         if max_c_length:
             all_spans = (s for s in all_spans if len(s) <= max_c_length)
