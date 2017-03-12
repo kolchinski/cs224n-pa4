@@ -129,12 +129,37 @@ class QASepSystem(qa_model.QASystem):
 
         # ==== assemble pieces ====
         with tf.variable_scope("qa", initializer=tf.uniform_unit_scaling_initializer(1.0)):
-            embeds = self.setup_embeddings()
+            #TODO: fix the embeddings
+            q_embeds = self.setup_embeddings()
+            c_embeds = self.setup_embeddings()
+
             self.results = self.setup_system(embeds)
             self.loss = self.setup_loss(self.results)
 
         # ==== set up training/updating procedure ====
         self.train_op = tf.train.AdamOptimizer(FLAGS.learning_rate).minimize(self.loss)
+
+
+    #TODO: do this for q and c separately
+    def setup_embeddings(self):
+
+        embed_path = FLAGS.embed_path or os.path.join(
+            "data", "squad", "glove.trimmed.{}.npz".format(FLAGS.embedding_size))
+        with open(embed_path, "rb") as f:
+            self.pretrained_embeddings = np.load(f)['glove']
+
+        self.boundary_token = np.random.randn(1, FLAGS.embedding_size)
+        self.pretrained_embeddings = np.append(self.pretrained_embeddings, self.boundary_token, axis=0)
+        self.boundary_token_index = len(self.pretrained_embeddings) - 1
+
+        # We now need to set up the tensorflow emedding
+
+        embed = tf.Variable(self.pretrained_embeddings, dtype=tf.float32)
+        embeddings = tf.nn.embedding_lookup(embed, self.input_placeholder)
+        # embeddings = tf.reshape(extracted, (-1, self.max_length, FLAGS.embed_size))
+        ### END YOUR CODE
+        return embeddings
+
 
     def setup_system(self, embeds):
 
