@@ -170,7 +170,6 @@ class QASepSystem(qa_model.QASystem):
         self.train_questions = all_qs = dataset['questions']
         self.train_spans = all_spans = dataset['spans']
         self.vocab = dataset['vocab']
-        self.vocab.append("<SEP>")
         assert(len(self.vocab) == len(self.pretrained_embeddings))
 
         pad_qs = self.pad_vocab_ids(all_qs, max_q_length)
