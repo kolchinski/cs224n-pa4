@@ -147,10 +147,6 @@ class QASystem(object):
         to assemble your reading comprehension system!
         :return:
         """
-        #initial_hidden_c = tf.placeholder(tf.float32, (None, FLAGS.state_size))
-        #initial_hidden_h = tf.placeholder(tf.float32, (None, FLAGS.state_size))
-        #initial_hidden = tf.nn.rnn_cell.LSTMStateTuple(initial_hidden_c, initial_hidden_h)
-        #hidden_rep = self.encoder.encode(embeds, initial_hidden)
 
         hidden_rep = self.encoder.encode(embeds, self.seq_lengths_placeholder, self.dropout_placeholder)
         res = self.decoder.decode(hidden_rep, self.seq_lengths_placeholder, self.mask_placeholder,
@@ -165,9 +161,11 @@ class QASystem(object):
         with vs.variable_scope("loss"):
             y = self.labels_placeholder
             orig_loss = tf.nn.l2_loss((final_res - y))
+            #previous_loss_metric = tf.reduce_mean(orig_loss)
             # now we need to weight the losses for missing the 1
             weighted_loss = (FLAGS.recall_multiplier * y + 1) * orig_loss
             loss = tf.reduce_mean(weighted_loss)
+            #loss = tf.Print(loss, [loss / previous_loss_metric])
 
         return loss
 
@@ -197,87 +195,6 @@ class QASystem(object):
         ### END YOUR CODE
         return embeddings
 
-
-    def optimize(self, session, train_x, train_y):
-        """
-        Takes in actual data to optimize your model
-        This method is equivalent to a step() function
-        :return:
-        """
-        input_feed = {}
-        input_feed['train_x'] = train_x
-        input_feed['train_y'] = train_y
-        # fill in this feed_dictionary like:
-        # input_feed['train_x'] = train_x
-
-        output_feed = [self.results]
-        outputs = session.run(output_feed, input_feed)
-
-        return outputs
-
-    def test(self, session, valid_x, valid_y):
-        """
-        in here you should compute a cost for your validation set
-        and tune your hyperparameters according to the validation set performance
-
-        :return:
-        """
-        input_feed = {}
-
-        # fill in this feed_dictionary like:
-        # input_feed['valid_x'] = valid_x
-
-        output_feed = []
-
-        outputs = session.run(output_feed, input_feed)
-
-        return outputs
-
-    def decode(self, session, test_x):
-        """
-        Returns the probability distribution over different positions in the paragraph
-        so that other methods like self.answer() will be able to work properly
-        :return:
-        """
-        input_feed = {}
-
-        # fill in this feed_dictionary like:
-        # input_feed['test_x'] = test_x
-
-        output_feed = []
-
-        outputs = session.run(output_feed, input_feed)
-
-        return outputs
-
-    def answer(self, session, test_x):
-
-        yp, yp2 = self.decode(session, test_x)
-
-        a_s = np.argmax(yp, axis=1)
-        a_e = np.argmax(yp2, axis=1)
-
-        return (a_s, a_e)
-
-    def validate(self, sess, valid_dataset):
-        """
-        Iterate through the validation dataset and determine what
-        the validation cost is.
-
-        This method calls self.test() which explicitly calculates validation cost.
-
-        How you implement this function is dependent on how you design
-        your data iteration function
-
-        :return:
-        """
-        valid_cost = 0
-
-        for valid_x, valid_y in valid_dataset:
-          valid_cost = self.test(sess, valid_x, valid_y)
-
-
-        return valid_cost
 
     def evaluate_answer(self, session, sample=500, log=True):
         """
@@ -491,19 +408,4 @@ class QASystem(object):
 
         print("Start train function")
         losses = self.fit(session, saver, self.train_qas)
-
-        #for b_num, b in enumerate(batches):
-        #    if b_num % 100 == 0:
-        #        print("Training on batch #{}".format(b_num))
-
-        #    #TODO: Bucket up training points that got thrown out for being too long
-        #    #so we can use them later
-        #    ques_con_seq, labels = zip(*b)
-
-        #    feed_dict = {self.input_placeholder: ques_con_seq,
-        #                 self.labels_placeholder: labels}
-        #    _, l = session.run([self.train_op, self.loss], feed_dict=feed_dict)
-        #    print(l)
-
-
 

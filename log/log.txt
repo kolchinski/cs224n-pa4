@@ -760,3 +760,19 @@ Epoch 1 out of 25
 
 F1: 0.0, EM: 0.0, for 500 samples
 0.0001458467449992895 mean prob; 0 total words predicted
+Created model with fresh parameters.
+Num params: 12123201
+Number of params: 12123201 (retrieval took 0.251592 secs)
+Epoch 1 out of 25
+Created model with fresh parameters.
+Num params: 12123201
+Number of params: 12123201 (retrieval took 0.234745 secs)
+Epoch 1 out of 25
+Created model with fresh parameters.
+Num params: 12123201
+Number of params: 12123201 (retrieval took 0.230862 secs)
+Epoch 1 out of 25
+Created model with fresh parameters.
+Num params: 12123201
+Number of params: 12123201 (retrieval took 0.232965 secs)
+Epoch 1 out of 25
