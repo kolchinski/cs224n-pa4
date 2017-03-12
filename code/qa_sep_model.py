@@ -68,21 +68,20 @@ class QASepSystem(qa_model.QASystem):
 
 
         # ==== set up placeholder tokens ========
-        #Question and context sequences
+        # Question and context sequences
         self.q_placeholder = tf.placeholder(tf.int32, (None, self.max_length))
         self.ctx_placeholder = tf.placeholder(tf.int32, (None, self.max_length))
 
-        #Lengths of those sequences
         self.q_lengths_placeholder = tf.placeholder(tf.int32, (None, self.max_length))
         self.c_lengths_placeholder = tf.placeholder(tf.int32, (None, self.max_length))
 
-        #True 1/0 labelings of words in the context
+        # True 1/0 labelings of words in the context
         self.labels_placeholder = tf.placeholder(tf.float32, (None, self.max_length))
 
-        #1/0 mask to ignore padding in context for loss purposes
+        # 1/0 mask to ignore padding in context for loss purposes
         self.mask_placeholder = tf.placeholder(tf.bool, (None, self.max_length))
 
-        #Proportion of connections to drop
+        # Proportion of connections to drop
         self.dropout_placeholder = tf.placeholder(tf.float32, ())
 
 
@@ -135,15 +134,16 @@ class QASepSystem(qa_model.QASystem):
         """
 
         q_batch, ctx_batch, labels_batch, context_spans_batch = batch_data
-        seq_lengths = [e + 1 for (s, e) in context_spans_batch]
+        q_lens, c_lens = zip(*context_spans_batch)
         masks = [[0] * s + [1] * (e - s + 1) + [0] * (FLAGS.max_length - e - 1)
                   for (s, e) in context_spans_batch]
         masks = np.array(masks)
 
-        feed_dict = {self.ques_placeholder: q_batch,
-                    self.ctx_placeholder: ctx_batch,
+        feed_dict = {self.q_placeholder: q_batch,
+                     self.ctx_placeholder: ctx_batch,
                      self.labels_placeholder: labels_batch,
-                     self.seq_lengths_placeholder: seq_lengths,
+                     self.q_lengths_placeholder: q_lens,
+                     self.c_lengths_placeholder: c_lens,
                      self.mask_placeholder: masks}
         _, l = session.run([self.train_op, self.loss], feed_dict=feed_dict)
 
@@ -153,7 +153,7 @@ class QASepSystem(qa_model.QASystem):
         eval_set = random.sample(self.dev_qas, sample)
         q_vec, ctx_vec, gold_spans, masks = zip(*eval_set)
 
-        feed_dict = {self.ques_placeholder: q_vec, self.ctx_placeholder: ctx_vec}
+        feed_dict = {self.q_placeholder: q_vec, self.ctx_placeholder: ctx_vec}
         pred_probs, = session.run([self.results], feed_dict=feed_dict)
         pred_spans = [[int(m > 0.5) for m in n] for n in pred_probs]
 
