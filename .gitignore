@@ -5,6 +5,8 @@ data/*
 download/*
 code/data/*
 code/download/*
+log/log.txt
+log/flags.json
 json
 logging
 os
