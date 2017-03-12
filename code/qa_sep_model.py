@@ -16,6 +16,47 @@ Questions and answer input placeholders.
 """
 
 
+#Take in questions and contexts batch-wise
+#Feed questions through one LSTM, then contexts through another
+class BiEncoder(object):
+    def __init__(self, size, vocab_dim):
+        self.size = size
+        self.vocab_dim = vocab_dim
+
+    def encode(self, qs, q_lens, cs, c_lens, dropout):
+        cell = tf.nn.rnn_cell.LSTMCell(self.size)
+        cell = tf.nn.rnn_cell.DropoutWrapper(cell, output_keep_prob = 1.0 - dropout)
+
+        #Run the first BiLSTM on the questions
+        q_outputs, q_states = tf.nn.bidirectional_dynamic_rnn(
+            cell_fw=cell,
+            cell_bw=cell,
+            dtype=tf.float32,
+            sequence_length=q_lens,
+            inputs=qs)
+
+        q_states_fw, q_states_bw = q_states
+
+
+        #Run the second BiLSTM on the contexts, starting with the hidden states from the question BiLSTM
+        c_outputs, c_states = tf.nn.bidirectional_dynamic_rnn(
+            cell_fw=cell,
+            cell_bw=cell,
+            dtype=tf.float32,
+            sequence_length=c_lens,
+            inputs=cs,
+            initial_state_bw=q_states_bw,
+            initial_state_fw=q_states_fw)
+
+        c_outputs_fw, c_outputs_bw = c_outputs
+        c_states_fw, c_states_bw = c_states
+
+        return q_outputs, c_outputs
+
+
+
+
+
 class QASepSystem(qa_model.QASystem):
 
     def __init__(self, encoder, decoder, *args):
@@ -27,10 +68,21 @@ class QASepSystem(qa_model.QASystem):
 
 
         # ==== set up placeholder tokens ========
-        self.ques_placeholder = tf.placeholder(tf.int32, (None, self.max_length))
+        #Question and context sequences
+        self.q_placeholder = tf.placeholder(tf.int32, (None, self.max_length))
         self.ctx_placeholder = tf.placeholder(tf.int32, (None, self.max_length))
+
+        #Lengths of those sequences
+        self.q_lengths_placeholder = tf.placeholder(tf.int32, (None, self.max_length))
+        self.c_lengths_placeholder = tf.placeholder(tf.int32, (None, self.max_length))
+
+        #True 1/0 labelings of words in the context
         self.labels_placeholder = tf.placeholder(tf.float32, (None, self.max_length))
+
+        #1/0 mask to ignore padding in context for loss purposes
         self.mask_placeholder = tf.placeholder(tf.bool, (None, self.max_length))
+
+        #Proportion of connections to drop
         self.dropout_placeholder = tf.placeholder(tf.float32, ())
 
 
