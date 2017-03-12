@@ -9,6 +9,7 @@ logging.basicConfig(level=logging.INFO)
 FLAGS = tf.app.flags.FLAGS
 
 import qa_model
+from tensorflow.python.ops import variable_scope as vs
 
 """
 This file is for the version of the QA_Model with separate
@@ -90,7 +91,7 @@ class NaiveBiDecoder(object):
 
         inner = tf.matmul(word_res, w) + b
         word_res = tf.nn.sigmoid(inner)
-        word_res = tf.reshape(word_res, [-1, max_len)
+        word_res = tf.reshape(word_res, [-1, max_len])
 
         #zero out irrelevant positions (before and after context) of predictions
         word_res = word_res * masks
