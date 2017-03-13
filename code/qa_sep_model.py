@@ -33,25 +33,19 @@ class BiEncoder(object):
         #Run the first BiLSTM on the questions
         with tf.variable_scope("ques"):
             q_outputs, q_states = tf.nn.bidirectional_dynamic_rnn(
-                cell_fw=cell,
-                cell_bw=cell,
-                dtype=tf.float32,
-                sequence_length=q_lens,
-                inputs=qs)
+                cell_fw=cell, cell_bw=cell,
+                sequence_length=q_lens, inputs=qs, dtype=tf.float32,
+                swap_memory=True)
 
         q_states_fw, q_states_bw = q_states
-
 
         #Run the second BiLSTM on the contexts, starting with the hidden states from the question BiLSTM
         with tf.variable_scope("c_en"):
             c_outputs, c_states = tf.nn.bidirectional_dynamic_rnn(
-                cell_fw=cell,
-                cell_bw=cell,
-                dtype=tf.float32,
-                sequence_length=c_lens,
-                inputs=cs,
-                initial_state_bw=q_states_bw,
-                initial_state_fw=q_states_fw)
+                cell_fw=cell, cell_bw=cell,
+                sequence_length=c_lens, inputs=cs, dtype=tf.float32,
+                initial_state_bw=q_states_bw, initial_state_fw=q_states_fw,
+                swap_memory=True)
 
             c_outputs_fw, c_outputs_bw = c_outputs
             c_states_fw, c_states_bw = c_states
@@ -76,13 +70,11 @@ class NaiveBiDecoder(object):
             cell = tf.nn.rnn_cell.LSTMCell(self.hidden_size, use_peepholes=False)
             cell = tf.nn.rnn_cell.DropoutWrapper(cell, output_keep_prob = 1.0 - dropout)
             outputs, states = tf.nn.bidirectional_dynamic_rnn(
-                cell_fw=cell,
-                cell_bw=cell,
-                dtype=tf.float32,
-                sequence_length=input_lens,
-                inputs=inputs,
-                initial_state_bw=init_state_bw,
-                initial_state_fw=init_state_fw)
+                cell_fw=cell, cell_bw=cell,
+                sequence_length=input_lens, dtype=tf.float32, inputs=inputs,
+                initial_state_bw=init_state_bw, initial_state_fw=init_state_fw,
+                swap_memory=True
+                )
             outputs_fw, outputs_bw = outputs
 
 
@@ -132,33 +124,25 @@ class QASepSystem(qa_model.QASystem):
         # Proportion of connections to drop
         self.dropout_placeholder = tf.placeholder(tf.float32, ())
 
-
-        # ==== assemble pieces ====
         with tf.variable_scope("qa", initializer=tf.uniform_unit_scaling_initializer(1.0)):
-            #TODO: fix the embeddings
             embeds = self.setup_embeddings()
             self.results = self.setup_system(embeds)
             self.loss = self.setup_loss(self.results)
 
-        # ==== set up training/updating procedure ====
         self.train_op = tf.train.AdamOptimizer(FLAGS.learning_rate).minimize(self.loss)
 
 
-    #TODO: do this for q and c separately
     def setup_embeddings(self):
-
         embed_path = FLAGS.embed_path or os.path.join(
             "data", "squad", "glove.trimmed.{}.npz".format(FLAGS.embedding_size))
         with open(embed_path, "rb") as f:
             self.pretrained_embeddings = np.load(f)['glove']
 
         # We now need to set up the tensorflow emedding
-
         embed = tf.Variable(self.pretrained_embeddings, dtype=tf.float32)
         q_embed = tf.nn.embedding_lookup(embed, self.q_placeholder)
         ctx_embed = tf.nn.embedding_lookup(embed, self.ctx_placeholder)
 
-        ### END YOUR CODE
         return {"q": q_embed, "ctx": ctx_embed}
 
     def setup_system(self, embeds):

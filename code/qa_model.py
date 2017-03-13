@@ -277,7 +277,7 @@ class QASystem(object):
 
         inputs_batch, labels_batch, context_spans_batch = batch_data
         seq_lengths = [e + 1 for (s, e) in context_spans_batch]
-        masks = [ [0] * s + [1] * (e - s + 1) + [0] * (FLAGS.max_length - e - 1)
+        masks = [[0] * s + [1] * (e - s + 1) + [0] * (FLAGS.max_length - e - 1)
             for (s,e) in context_spans_batch]
         masks = np.array(masks)
 
