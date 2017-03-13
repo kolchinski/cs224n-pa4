@@ -223,7 +223,7 @@ class QASepSystem(qa_model.QASystem):
         pred_spans = [[int(m > 0.5) for m in n] for n in pred_probs]
 
         f1s, ems = zip(*(self.eval_sentence(p, g, s)
-                         for p, g, s in zip(ctx_vec, gold_spans, pred_spans)))
+                         for p, g, s in zip(pred_spans, gold_spans, ctx_vec)))
 
         f1 = np.mean(f1s)
         em = np.mean(ems)
