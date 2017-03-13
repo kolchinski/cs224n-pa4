@@ -61,10 +61,7 @@ class NaiveBiDecoder(object):
 
     def decode(self, init_state, inputs, input_lens, masks, dropout):
         init_state_fw, init_state_bw = init_state
-        # input_state = [(init_state_bw[i] + init_state_fw[i])/2 for i in range(2)]
-        # input_state = (init_state_bw + init_state_fw)/2
-        # max_len = tf.shape(inputs)[1]
-        inputs = (inputs[0] + inputs[1])/2
+        max_len = tf.shape(inputs)[1]
 
         with vs.variable_scope("decoder"):
             cell = tf.nn.rnn_cell.LSTMCell(self.hidden_size, use_peepholes=False)
