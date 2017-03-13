@@ -163,7 +163,7 @@ class QASepSystem(qa_model.QASystem):
         # build the padded questions, contexts, spans, lengths
         pad_qs, pad_cs, pad_spans, seq_lens = (list() for i in range(4))
 
-        for q, c, span, vocab in zip(all_qs, all_cs, all_spans, self.vocab):
+        for q, c, span in zip(all_qs, all_cs, all_spans):
             if len(q) > max_q_length:
                 continue
             if len(c) > max_c_length:
@@ -180,7 +180,7 @@ class QASepSystem(qa_model.QASystem):
         self.train_qas = all_qs[:train_size]
         self.dev_qas = all_qs[train_size:]
 
-        sort_alg = lambda x: x[3][2] + x[3][1] / 1000  # small bias for quesiton length
+        sort_alg = lambda x: x[3][1] + x[3][0] / 1000  # small bias for quesiton length
         self.train_qas.sort(key=sort_alg)
         self.dev_qas.sort(key=sort_alg)
 
