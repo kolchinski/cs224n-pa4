@@ -105,7 +105,7 @@ def main(_):
     qa = QASepSystem(FLAGS.embedding_size, FLAGS.state_size, FLAGS.output_size)
 
     dataset = load_dataset(FLAGS.data_dir)
-    qa.process_dataset(dataset, max_c_length=230, max_q_length=20)
+    qa.process_dataset(dataset, max_c_length=300, max_q_length=30)
     qa.build_pipeline()
 
     if not os.path.exists(FLAGS.log_dir):
