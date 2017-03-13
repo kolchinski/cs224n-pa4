@@ -54,6 +54,73 @@ class BiEncoder(object):
 
 
 #Take in the output of the BiEncoder and turn it into a vector of probabilities
+class AttentionBiDecoder(object):
+    def __init__(self, output_size, hidden_size):
+        self.output_size = output_size
+        self.hidden_size = hidden_size
+
+    def decode(self, init_state, q_embeds, c_embeds, input_lens, masks, dropout):
+        init_state_fw, init_state_bw = init_state
+        inputs = c_embeds
+
+        with vs.variable_scope("decoder"):
+            cell = tf.nn.rnn_cell.LSTMCell(self.hidden_size, use_peepholes=False)
+            cell = tf.nn.rnn_cell.DropoutWrapper(cell, output_keep_prob = 1.0 - dropout)
+            outputs, states = tf.nn.bidirectional_dynamic_rnn(
+                cell_fw=cell, cell_bw=cell,
+                sequence_length=input_lens, dtype=tf.float32, inputs=inputs,
+                initial_state_bw=init_state_bw, initial_state_fw=init_state_fw,
+                swap_memory=True
+                )
+            outputs_fw, outputs_bw = outputs
+
+
+        ## Attention mechanism code follows
+        ## For reference, see paper at http://nlp.stanford.edu/pubs/emnlp15_attn.pdf
+        ## and post at https://piazza.com/class/iw9g8b9yxp46s8?cid=2106
+
+        #H states from encoder LSTMs (concatenated),
+        # dimensions (batch size) x (question length + context length) x (embedding size)
+        qc_embed = tf.concat(0, q_embeds, c_embeds)
+
+        #H-states from decoder LSTM, dimensions (batch size) x (context length) x (embedding size)
+        decodings = outputs
+
+        xav_init = tf.contrib.layers.xavier_initializer()
+        #Compute the bilinear product of encoder and decoder outputs to generate the attention weights vector
+        w_a = tf.get_variable("W_a", (self.hidden_size, self.hidden_size), tf.float32, xav_init)
+
+        # Final dimensions: (batch size) x (context length) x (question length + context length)
+        pairwise_scores = tf.einsum('bnd,dd,bmd->bmn', qc_embed, w_a, decodings)
+
+        #Now, apply softmax to get the actual attention weights - softmax automatically normalizes over the last dim
+        #Shape same as pairwise_scores
+        attn_weights = tf.nn.softmax(pairwise_scores)
+
+        #Now, use the above-calculated weights to calculate a weighted average of encoder outputs for each
+        #position of the decoder output. Output shape: (batch size) x (context length) x (embedding size)
+        weighted_embeddings = tf.einsum('bmn,bnd->bmd', attn_weights, qc_embed)
+
+        #Append the attention-ified encoder embedding with our decoder embedding
+        #Output shape: (batch_size) x (context length) x (2*embedding size)
+        extended_states = tf.concat(2, decodings, weighted_embeddings)
+
+        #Multiply the new state through by a matrix to convert it to a new "attentionified state"
+        #Output shape: (batch size) x (context length) x (embedding size)
+        w_c = tf.get_variable("W_c", (2*self.hidden_size, self.hidden_size), tf.float32, xav_init)
+        h_tilde = tf.einsum('bme,ed,bmd', extended_states, w_c)
+
+        #Finally, multiply the newly transformed states each by a final transformation vector to get the
+        #predicted probability that the word at a given position of a given batch is part of the answer
+        #Final output shape: (batch size) x (context length)
+        w_s = tf.get_variable("W_s", (self.hidden_size), tf.float32, xav_init)
+        word_res = tf.nn.sigmoid(tf.einsum('bmd,d->bm', h_tilde, w_s))
+
+        #zero out irrelevant positions (before and after context) of predictions
+        word_res = word_res * masks
+        return word_res
+
+#Take in the output of the BiEncoder and turn it into a vector of probabilities
 class NaiveBiDecoder(object):
     def __init__(self, output_size, hidden_size):
         self.output_size = output_size
@@ -61,7 +128,6 @@ class NaiveBiDecoder(object):
 
     def decode(self, init_state, inputs, input_lens, masks, dropout):
         init_state_fw, init_state_bw = init_state
-        max_len = tf.shape(inputs)[1]
 
         with vs.variable_scope("decoder"):
             cell = tf.nn.rnn_cell.LSTMCell(self.hidden_size, use_peepholes=False)
