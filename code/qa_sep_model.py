@@ -203,7 +203,7 @@ class QASepSystem(qa_model.QASystem):
     def prepare_data(self, data, dropout=0):
         q_batch, ctx_batch, labels_batch, context_spans_batch = data
         q_lens, c_lens = zip(*context_spans_batch)
-        masks = [self.selector_sequence(0, c, self.max_c_len)  for c in c_lens]
+        masks = [self.selector_sequence(0, c - 1, self.max_c_len)  for c in c_lens]
 
         feed_dict = {self.q_placeholder: q_batch,
                      self.ctx_placeholder: ctx_batch,
@@ -218,7 +218,7 @@ class QASepSystem(qa_model.QASystem):
         eval_set = random.sample(self.dev_qas, sample)
         q_vec, ctx_vec, gold_spans, masks = zip(*eval_set)
 
-        feed_dict = self.prepare_data(eval_set)
+        feed_dict = self.prepare_data(zip(*eval_set))
         pred_probs, = session.run([self.results], feed_dict=feed_dict)
         pred_spans = [[int(m > 0.5) for m in n] for n in pred_probs]
 
