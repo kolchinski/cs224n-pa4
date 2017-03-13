@@ -67,7 +67,10 @@ class NaiveBiDecoder(object):
 
     def decode(self, init_state, inputs, input_lens, masks, dropout):
         init_state_fw, init_state_bw = init_state
-        max_len = tf.shape(inputs)[1]
+        # input_state = [(init_state_bw[i] + init_state_fw[i])/2 for i in range(2)]
+        # input_state = (init_state_bw + init_state_fw)/2
+        # max_len = tf.shape(inputs)[1]
+        inputs = (inputs[0] + inputs[1])/2
 
         with vs.variable_scope("decoder"):
             cell = tf.nn.rnn_cell.LSTMCell(self.hidden_size, use_peepholes=False)
@@ -91,38 +94,40 @@ class NaiveBiDecoder(object):
         #Fix this - need to stack forward and backward outputs
         word_res_fw = tf.reshape(outputs_fw, [-1, self.hidden_size])
         word_res_bw = tf.reshape(outputs_bw, [-1, self.hidden_size])
-        word_res = tf.concat(1, word_res_fw, word_res_bw)
+        word_res = tf.concat(1, [word_res_fw, word_res_bw])
 
         inner = tf.matmul(word_res, w) + b
         word_res = tf.nn.sigmoid(inner)
-        word_res = tf.reshape(word_res, [-1, max_len])
+        word_res = tf.reshape(word_res, [-1, self.output_size])
 
         #zero out irrelevant positions (before and after context) of predictions
         word_res = word_res * masks
-        return  word_res
+        return word_res
 
 
 class QASepSystem(qa_model.QASystem):
     def __init__(self, input_size, hidden_size, output_size, *args):
         self.in_size = input_size
-        self.out_size = output_size
-        self.encoder = BiEncoder(hidden_size, input_size)
-        self.decoder = NaiveBiDecoder(output_size, hidden_size)
+        self.hidden_size = hidden_size
+        # self.out_size = output_size
 
     def build_pipeline(self):
         # ==== set up placeholder tokens ========
         # Question and context sequences
+        self.encoder = BiEncoder(self.hidden_size, self.in_size)
+        self.decoder = NaiveBiDecoder(self.max_c_len, self.hidden_size)
+
         self.q_placeholder = tf.placeholder(tf.int32, (None, self.max_q_len))
         self.ctx_placeholder = tf.placeholder(tf.int32, (None, self.max_c_len))
 
-        self.q_lengths_placeholder = tf.placeholder(tf.int32, (None, self.max_q_len))
-        self.c_lengths_placeholder = tf.placeholder(tf.int32, (None, self.max_c_len))
+        self.q_len_pholder = tf.placeholder(tf.int32, (None,))
+        self.c_len_pholder = tf.placeholder(tf.int32, (None,))
 
         # True 1/0 labelings of words in the context
         self.labels_placeholder = tf.placeholder(tf.float32, (None, self.max_c_len))
 
         # 1/0 mask to ignore padding in context for loss purposes
-        self.mask_placeholder = tf.placeholder(tf.bool, (None, self.max_c_len))
+        self.mask_placeholder = tf.placeholder(tf.float32, (None, self.max_c_len))
 
         # Proportion of connections to drop
         self.dropout_placeholder = tf.placeholder(tf.float32, ())
@@ -158,9 +163,10 @@ class QASepSystem(qa_model.QASystem):
 
     def setup_system(self, embeds):
         #def encode(self, qs, q_lens, cs, c_lens, dropout):
-        hidden_rep = self.encoder.encode(embeds["q"], self.q_lengths_placeholder, embeds["ctx"],
-                                         self.c_lengths_placeholder, self.dropout_placeholder)
-        res = self.decoder.decode(hidden_rep, self.seq_lengths_placeholder, self.mask_placeholder,
+        hidden_rep = self.encoder.encode(embeds["q"], self.q_len_pholder, embeds["ctx"],
+                                         self.c_len_pholder, self.dropout_placeholder)
+        q_out, q_state, c_out, c_states = hidden_rep
+        res = self.decoder.decode(q_state, c_out, self.c_len_pholder, self.mask_placeholder,
                                   self.dropout_placeholder)
         return res
 
@@ -181,7 +187,7 @@ class QASepSystem(qa_model.QASystem):
         padded_spans = [self.selector_sequence(start, end, max_c_length)
                         for start, end in all_spans]
 
-        seq_ends = [(len(c), len(q)) for c, q in zip(all_cs, all_qs)]
+        seq_ends = [(len(q), len(c)) for q, c in zip(all_qs, all_cs)]
         all_qs = list(zip(pad_qs, pad_ctxs, padded_spans, seq_ends))
         # random.shuffle(all_qs)  # change the train/validation set from run to run
 
@@ -218,8 +224,8 @@ class QASepSystem(qa_model.QASystem):
         feed_dict = {self.q_placeholder: q_batch,
                      self.ctx_placeholder: ctx_batch,
                      self.labels_placeholder: labels_batch,
-                     self.q_lengths_placeholder: q_lens,
-                     self.c_lengths_placeholder: c_lens,
+                     self.q_len_pholder: q_lens,
+                     self.c_len_pholder: c_lens,
                      self.dropout_placeholder: dropout,
                      self.mask_placeholder: masks}
         return feed_dict
