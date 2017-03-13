@@ -21,8 +21,8 @@ tf.app.flags.DEFINE_float("recall_multiplier", 100, "Proportionality multiplier 
 tf.app.flags.DEFINE_float("learning_rate", 0.01, "Learning rate.")
 tf.app.flags.DEFINE_float("max_gradient_norm", 10.0, "Clip gradients to this norm.")
 tf.app.flags.DEFINE_float("dropout", 0.15, "Fraction of units randomly dropped on non-recurrent connections.")
-tf.app.flags.DEFINE_integer("batch_size", 10, "Batch size to use during training.")
-tf.app.flags.DEFINE_integer("epochs", 25, "Number of epochs to train.")
+tf.app.flags.DEFINE_integer("batch_size", 512, "Batch size to use during training.")
+tf.app.flags.DEFINE_integer("epochs", 100, "Number of epochs to train.")
 tf.app.flags.DEFINE_integer("state_size", 200, "Size of each model layer.")
 tf.app.flags.DEFINE_integer("output_size", 750, "The output size of your model.")
 tf.app.flags.DEFINE_integer("embedding_size", 100, "Size of the pretrained vocabulary.")
@@ -94,7 +94,7 @@ def load_data_file(name):
 def main(_):
     #embed_path = FLAGS.embed_path or pjoin("data", "squad", "glove.trimmed.{}.npz".format(FLAGS.embedding_size))
 
-    os.chdir('..')
+    # os.chdir('..')
     print("Initializing vocab")
     vocab_path = FLAGS.vocab_path or pjoin(FLAGS.data_dir, "vocab.dat")
     vocab, rev_vocab = initialize_vocab(vocab_path)

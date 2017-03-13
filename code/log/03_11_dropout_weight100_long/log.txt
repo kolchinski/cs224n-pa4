@@ -1,0 +1,460 @@
+Created model with fresh parameters.
+Num params: 12123201
+Number of params: 12123201 (retrieval took 0.175950 secs)
+Epoch 1 out of 25
+Created model with fresh parameters.
+Num params: 12123201
+Number of params: 12123201 (retrieval took 0.172979 secs)
+Epoch 1 out of 25
+Created model with fresh parameters.
+Num params: 12123201
+Number of params: 12123201 (retrieval took 0.176614 secs)
+Epoch 1 out of 25
+
+F1: 0.0512492520862, EM: 0.0, for 500 samples
+0.00924118142575 mean prob; 0 total words predicted
+Epoch 2 out of 25
+
+F1: 0.0469835644617, EM: 0.0, for 500 samples
+0.0117406724021 mean prob; 0 total words predicted
+Epoch 3 out of 25
+
+F1: 0.0479986416179, EM: 0.0, for 500 samples
+0.0100493431091 mean prob; 0 total words predicted
+Epoch 4 out of 25
+
+F1: 0.0500332234283, EM: 0.0, for 500 samples
+0.0117889400572 mean prob; 0 total words predicted
+Epoch 5 out of 25
+
+F1: 0.0489848450335, EM: 0.0, for 500 samples
+0.0122360801324 mean prob; 0 total words predicted
+Epoch 6 out of 25
+
+F1: 0.052549001999, EM: 0.0, for 500 samples
+0.0148765305057 mean prob; 0 total words predicted
+Epoch 7 out of 25
+
+F1: 0.0538763598472, EM: 0.0, for 500 samples
+0.012047749944 mean prob; 0 total words predicted
+Epoch 8 out of 25
+
+F1: 0.052509505547, EM: 0.0, for 500 samples
+0.0175835024565 mean prob; 0 total words predicted
+Epoch 9 out of 25
+
+F1: 0.053234295846, EM: 0.0, for 500 samples
+0.0141756096855 mean prob; 0 total words predicted
+Epoch 10 out of 25
+
+F1: 0.0434597862639, EM: 0.0, for 500 samples
+0.0112844090909 mean prob; 0 total words predicted
+Epoch 11 out of 25
+
+F1: 0.0546768682128, EM: 0.0, for 500 samples
+0.0130566665903 mean prob; 0 total words predicted
+Epoch 12 out of 25
+
+F1: 0.0481423096084, EM: 0.0, for 500 samples
+0.0120680946857 mean prob; 0 total words predicted
+Epoch 13 out of 25
+
+F1: 0.0525158440386, EM: 0.0, for 500 samples
+0.0151243237779 mean prob; 0 total words predicted
+Epoch 14 out of 25
+
+F1: 0.0535823903353, EM: 0.0, for 500 samples
+0.0110495900735 mean prob; 4 total words predicted
+Epoch 15 out of 25
+
+F1: 0.0474752179087, EM: 0.0, for 500 samples
+0.0154447769746 mean prob; 107 total words predicted
+Epoch 16 out of 25
+
+F1: 0.0484370687066, EM: 0.0, for 500 samples
+0.0169470272958 mean prob; 266 total words predicted
+Epoch 17 out of 25
+
+F1: 0.0514774667138, EM: 0.0, for 500 samples
+0.0135402977467 mean prob; 166 total words predicted
+Epoch 18 out of 25
+
+F1: 0.0535481908852, EM: 0.0, for 500 samples
+0.0120299551636 mean prob; 215 total words predicted
+Epoch 19 out of 25
+
+F1: 0.0526224940439, EM: 0.0, for 500 samples
+0.0131579507142 mean prob; 403 total words predicted
+Epoch 20 out of 25
+Created model with fresh parameters.
+Num params: 12123201
+Number of params: 12123201 (retrieval took 0.176777 secs)
+Epoch 1 out of 25
+
+F1: 0.0, EM: 0.0, for 500 samples
+0.000205568605452 mean prob; 0 total words predicted
+Epoch 2 out of 25
+
+F1: 0.0, EM: 0.0, for 500 samples
+0.00096627138555 mean prob; 0 total words predicted
+Epoch 3 out of 25
+
+F1: 0.0, EM: 0.0, for 500 samples
+0.00168986117933 mean prob; 0 total words predicted
+Epoch 4 out of 25
+
+F1: 0.0, EM: 0.0, for 500 samples
+0.00232276483439 mean prob; 0 total words predicted
+Epoch 5 out of 25
+
+F1: 0.0, EM: 0.002, for 500 samples
+0.00405021011829 mean prob; 0 total words predicted
+Epoch 6 out of 25
+
+F1: 0.0, EM: 0.0, for 500 samples
+0.00697210012004 mean prob; 0 total words predicted
+Epoch 7 out of 25
+
+F1: 0.0, EM: 0.0, for 500 samples
+0.0103386593983 mean prob; 0 total words predicted
+Epoch 8 out of 25
+Created model with fresh parameters.
+Num params: 12123201
+Number of params: 12123201 (retrieval took 0.169499 secs)
+Epoch 1 out of 25
+
+F1: 0.0, EM: 0.0, for 500 samples
+0.0124204354361 mean prob; 0 total words predicted
+Epoch 2 out of 25
+
+F1: 0.0, EM: 0.0, for 500 samples
+0.0111078303307 mean prob; 0 total words predicted
+Epoch 3 out of 25
+
+F1: 0.0, EM: 0.0, for 500 samples
+0.0117763364688 mean prob; 0 total words predicted
+Epoch 4 out of 25
+
+F1: 0.0, EM: 0.0, for 500 samples
+0.0134808411822 mean prob; 0 total words predicted
+Epoch 5 out of 25
+
+F1: 0.0, EM: 0.0, for 500 samples
+0.0123310433701 mean prob; 0 total words predicted
+Epoch 6 out of 25
+
+F1: 0.0, EM: 0.0, for 500 samples
+0.0137971797958 mean prob; 0 total words predicted
+Epoch 7 out of 25
+
+F1: 0.0, EM: 0.0, for 500 samples
+0.0136630693451 mean prob; 0 total words predicted
+Epoch 8 out of 25
+
+F1: 0.0, EM: 0.0, for 500 samples
+0.0144630949944 mean prob; 0 total words predicted
+Epoch 9 out of 25
+
+F1: 0.0, EM: 0.002, for 500 samples
+0.013720001094 mean prob; 0 total words predicted
+Epoch 10 out of 25
+
+F1: 0.0004, EM: 0.0, for 500 samples
+0.0116224410012 mean prob; 2 total words predicted
+Epoch 11 out of 25
+
+F1: 0.00157338935574, EM: 0.0, for 500 samples
+0.0135263977572 mean prob; 70 total words predicted
+Epoch 12 out of 25
+
+F1: 0.0038126984127, EM: 0.0, for 500 samples
+0.0167985614389 mean prob; 69 total words predicted
+Epoch 13 out of 25
+
+F1: 0.00548581449471, EM: 0.0, for 500 samples
+0.0131453424692 mean prob; 145 total words predicted
+Epoch 14 out of 25
+
+F1: 0.00485324675325, EM: 0.0, for 500 samples
+0.0135700264946 mean prob; 179 total words predicted
+Epoch 15 out of 25
+
+F1: 0.00913634127634, EM: 0.0, for 500 samples
+0.0104285608977 mean prob; 241 total words predicted
+Epoch 16 out of 25
+
+F1: 0.0220679002914, EM: 0.008, for 500 samples
+0.0125073771924 mean prob; 418 total words predicted
+Epoch 17 out of 25
+
+F1: 0.0362729217526, EM: 0.006, for 500 samples
+0.0135094393045 mean prob; 469 total words predicted
+Epoch 18 out of 25
+
+F1: 0.0437085584666, EM: 0.022, for 500 samples
+0.0126857860014 mean prob; 379 total words predicted
+Epoch 19 out of 25
+
+F1: 0.0365242303157, EM: 0.01, for 500 samples
+0.0111771645024 mean prob; 379 total words predicted
+Epoch 20 out of 25
+Created model with fresh parameters.
+
+F1: 0.0482454693804, EM: 0.016, for 500 samples
+0.0127779562026 mean prob; 536 total words predicted
+Epoch 21 out of 25
+
+F1: 0.0485442273676, EM: 0.022, for 500 samples
+0.010755058378 mean prob; 509 total words predicted
+Epoch 22 out of 25
+
+F1: 0.0528702147526, EM: 0.03, for 500 samples
+0.0111238723621 mean prob; 500 total words predicted
+Epoch 23 out of 25
+
+F1: 0.052315814827, EM: 0.018, for 500 samples
+0.0120221925899 mean prob; 554 total words predicted
+Epoch 24 out of 25
+
+F1: 0.0476411699026, EM: 0.018, for 500 samples
+0.00903735030442 mean prob; 538 total words predicted
+Epoch 25 out of 25
+
+F1: 0.0784251932938, EM: 0.026, for 500 samples
+0.0148868495598 mean prob; 797 total words predicted
+Created model with fresh parameters.
+Num params: 12123201
+Number of params: 12123201 (retrieval took 0.173107 secs)
+Epoch 1 out of 100
+
+F1: 0.0, EM: 0.0, for 500 samples
+0.00931787677109 mean prob; 0 total words predicted
+Epoch 2 out of 100
+
+F1: 0.0, EM: 0.0, for 500 samples
+0.0107097830623 mean prob; 0 total words predicted
+Epoch 3 out of 100
+
+F1: 0.0, EM: 0.0, for 500 samples
+0.0107527961954 mean prob; 0 total words predicted
+Epoch 4 out of 100
+
+F1: 0.0, EM: 0.0, for 500 samples
+0.010617448017 mean prob; 0 total words predicted
+Epoch 5 out of 100
+
+F1: 0.0, EM: 0.0, for 500 samples
+0.0125353178009 mean prob; 0 total words predicted
+Epoch 6 out of 100
+
+F1: 0.0, EM: 0.0, for 500 samples
+0.0137579739094 mean prob; 0 total words predicted
+Epoch 7 out of 100
+
+F1: 0.0, EM: 0.0, for 500 samples
+0.0137594901025 mean prob; 0 total words predicted
+Epoch 8 out of 100
+
+F1: 0.0, EM: 0.0, for 500 samples
+0.0131557742134 mean prob; 0 total words predicted
+Epoch 9 out of 100
+
+F1: 0.0, EM: 0.002, for 500 samples
+0.0130945686251 mean prob; 0 total words predicted
+Epoch 10 out of 100
+
+F1: 0.0, EM: 0.0, for 500 samples
+0.0105454549193 mean prob; 0 total words predicted
+Epoch 11 out of 100
+
+F1: 0.0, EM: 0.0, for 500 samples
+0.0153372790664 mean prob; 0 total words predicted
+Epoch 12 out of 100
+
+F1: 0.0, EM: 0.0, for 500 samples
+0.0119860433042 mean prob; 8 total words predicted
+Epoch 13 out of 100
+
+F1: 0.000666666666667, EM: 0.0, for 500 samples
+0.0108022782952 mean prob; 37 total words predicted
+Epoch 14 out of 100
+
+F1: 0.00166666666667, EM: 0.0, for 500 samples
+0.0128830866888 mean prob; 33 total words predicted
+Epoch 15 out of 100
+
+F1: 0.0068253968254, EM: 0.002, for 500 samples
+0.0123799014837 mean prob; 25 total words predicted
+Epoch 16 out of 100
+
+F1: 0.0192920634921, EM: 0.006, for 500 samples
+0.0156856626272 mean prob; 217 total words predicted
+Epoch 17 out of 100
+
+F1: 0.0163418856506, EM: 0.002, for 500 samples
+0.0109510682523 mean prob; 94 total words predicted
+Epoch 18 out of 100
+
+F1: 0.0272656070427, EM: 0.012, for 500 samples
+0.0111906835809 mean prob; 406 total words predicted
+Epoch 19 out of 100
+
+F1: 0.0343451879039, EM: 0.014, for 500 samples
+0.0104032382369 mean prob; 374 total words predicted
+Epoch 20 out of 100
+
+F1: 0.037107115251, EM: 0.02, for 500 samples
+0.0135591262951 mean prob; 436 total words predicted
+Epoch 21 out of 100
+
+F1: 0.0547130674554, EM: 0.024, for 500 samples
+0.0144098782912 mean prob; 457 total words predicted
+Epoch 22 out of 100
+
+F1: 0.0427821018956, EM: 0.02, for 500 samples
+0.0135754374787 mean prob; 493 total words predicted
+Epoch 23 out of 100
+
+F1: 0.0584601322425, EM: 0.03, for 500 samples
+0.0107419090346 mean prob; 498 total words predicted
+Epoch 24 out of 100
+
+F1: 0.0830663983076, EM: 0.044, for 500 samples
+0.012773106806 mean prob; 660 total words predicted
+Epoch 25 out of 100
+
+F1: 0.0395077368133, EM: 0.02, for 500 samples
+0.0117693459615 mean prob; 683 total words predicted
+Epoch 26 out of 100
+
+F1: 0.0500174971228, EM: 0.02, for 500 samples
+0.0107738943771 mean prob; 448 total words predicted
+Epoch 27 out of 100
+
+F1: 0.0877349946644, EM: 0.046, for 500 samples
+0.0139259183779 mean prob; 702 total words predicted
+Epoch 28 out of 100
+
+F1: 0.0734468442163, EM: 0.034, for 500 samples
+0.0138027854264 mean prob; 842 total words predicted
+Epoch 29 out of 100
+
+F1: 0.0729890145468, EM: 0.032, for 500 samples
+0.01315549016 mean prob; 771 total words predicted
+Epoch 30 out of 100
+
+F1: 0.076807632481, EM: 0.046, for 500 samples
+0.0113546820357 mean prob; 783 total words predicted
+Epoch 31 out of 100
+
+F1: 0.0780239188228, EM: 0.042, for 500 samples
+0.0140792671591 mean prob; 810 total words predicted
+Epoch 32 out of 100
+
+F1: 0.0718217509141, EM: 0.024, for 500 samples
+0.0137668857351 mean prob; 964 total words predicted
+Epoch 33 out of 100
+
+F1: 0.112355895588, EM: 0.054, for 500 samples
+0.0155580621213 mean prob; 981 total words predicted
+Epoch 34 out of 100
+
+F1: 0.0647131569566, EM: 0.04, for 500 samples
+0.0116096371785 mean prob; 724 total words predicted
+Epoch 35 out of 100
+
+F1: 0.0705519644071, EM: 0.026, for 500 samples
+0.0122995786369 mean prob; 914 total words predicted
+Epoch 36 out of 100
+
+F1: 0.0753266677005, EM: 0.04, for 500 samples
+0.0115716345608 mean prob; 842 total words predicted
+Epoch 37 out of 100
+
+F1: 0.0727642571928, EM: 0.038, for 500 samples
+0.0123205929995 mean prob; 806 total words predicted
+Epoch 38 out of 100
+
+F1: 0.0744103174603, EM: 0.04, for 500 samples
+0.0117383031175 mean prob; 768 total words predicted
+Epoch 39 out of 100
+
+F1: 0.0835195359348, EM: 0.034, for 500 samples
+0.0135551290587 mean prob; 995 total words predicted
+Epoch 40 out of 100
+
+F1: 0.0690401405681, EM: 0.034, for 500 samples
+0.0123856021091 mean prob; 791 total words predicted
+Epoch 41 out of 100
+
+F1: 0.0789408837287, EM: 0.036, for 500 samples
+0.0114597575739 mean prob; 863 total words predicted
+Epoch 42 out of 100
+
+F1: 0.0789982082016, EM: 0.038, for 500 samples
+0.0117967249826 mean prob; 886 total words predicted
+Epoch 43 out of 100
+
+F1: 0.0675995123944, EM: 0.028, for 500 samples
+0.0119228130206 mean prob; 901 total words predicted
+Epoch 44 out of 100
+
+F1: 0.0698184042858, EM: 0.03, for 500 samples
+0.0106722610071 mean prob; 823 total words predicted
+Epoch 45 out of 100
+
+F1: 0.0821064583748, EM: 0.038, for 500 samples
+0.0130189172924 mean prob; 1001 total words predicted
+Epoch 46 out of 100
+
+F1: 0.0678091301296, EM: 0.032, for 500 samples
+0.00978511478752 mean prob; 708 total words predicted
+Epoch 47 out of 100
+
+F1: 0.0879468435341, EM: 0.036, for 500 samples
+0.0126020442694 mean prob; 962 total words predicted
+Epoch 48 out of 100
+
+F1: 0.0823423027784, EM: 0.038, for 500 samples
+0.0124359922484 mean prob; 953 total words predicted
+Epoch 49 out of 100
+
+F1: 0.072815989745, EM: 0.03, for 500 samples
+0.0116738583893 mean prob; 920 total words predicted
+Epoch 50 out of 100
+
+F1: 0.0988613799386, EM: 0.05, for 500 samples
+0.0130230272189 mean prob; 978 total words predicted
+Epoch 51 out of 100
+
+F1: 0.0913733126285, EM: 0.046, for 500 samples
+0.0129951080307 mean prob; 976 total words predicted
+Epoch 52 out of 100
+
+F1: 0.10320701716, EM: 0.052, for 500 samples
+0.0119736399502 mean prob; 904 total words predicted
+Epoch 53 out of 100
+
+F1: 0.110183808287, EM: 0.048, for 500 samples
+0.0122244087979 mean prob; 998 total words predicted
+Epoch 54 out of 100
+
+F1: 0.0594408544094, EM: 0.02, for 500 samples
+0.0113020353019 mean prob; 826 total words predicted
+Epoch 55 out of 100
+
+F1: 0.0699960880584, EM: 0.03, for 500 samples
+0.00931460503489 mean prob; 787 total words predicted
+Epoch 56 out of 100
+
+F1: 0.079844587726, EM: 0.038, for 500 samples
+0.0118493363261 mean prob; 1009 total words predicted
+Epoch 57 out of 100
+
+F1: 0.087698745529, EM: 0.044, for 500 samples
+0.0104006556794 mean prob; 937 total words predicted
+Epoch 58 out of 100
+
+F1: 0.077842319303, EM: 0.04, for 500 samples
+0.0116432029754 mean prob; 917 total words predicted
+Epoch 59 out of 100
