@@ -86,8 +86,8 @@ def get_normalized_train_dir(train_dir):
     return global_train_dir
 
 
-def load_data_file(name):
-    with open(os.path.join(FLAGS.data_dir, name)) as f:
+def load_data_file(data_dir, name):
+    with open(os.path.join(data_dir, name)) as f:
         return [[int(w) for w in l.strip().split()] for l in f.readlines()]
 
 
@@ -95,19 +95,17 @@ def main(_):
     #embed_path = FLAGS.embed_path or pjoin("data", "squad", "glove.trimmed.{}.npz".format(FLAGS.embedding_size))
 
     # os.chdir('..')
-    print("Initializing vocab")
-    vocab_path = FLAGS.vocab_path or pjoin(FLAGS.data_dir, "vocab.dat")
-    vocab, rev_vocab = initialize_vocab(vocab_path)
+    # we never use this
+    # print("Initializing vocab")
+    # vocab_path = FLAGS.vocab_path or pjoin(FLAGS.data_dir, "vocab.dat")
+    # vocab, rev_vocab = initialize_vocab(vocab_path)
 
-    print("Building encoder and decoder")
 
     print("Building QASystem")
     qa = QASepSystem(FLAGS.embedding_size, FLAGS.state_size, FLAGS.output_size)
 
-    with open(os.path.join(FLAGS.data_dir, 'vocab.dat'), "rb") as f:
-        vocab = [str(l).strip() for l in f.readlines()]
-
-    process_training(qa, vocab)
+    dataset = load_dataset(FLAGS.data_dir)
+    qa.process_dataset(dataset, max_c_length=230, max_q_length=20)
     qa.build_pipeline()
 
     if not os.path.exists(FLAGS.log_dir):
@@ -118,7 +116,7 @@ def main(_):
     file_handler = logging.FileHandler(pjoin(FLAGS.log_dir, "log.txt"))
     logging.getLogger().addHandler(file_handler)
 
-    print(vars(FLAGS))
+    print("Flags: ", vars(FLAGS))
     with open(os.path.join(FLAGS.log_dir, "flags.json"), 'w') as fout:
         json.dump(FLAGS.__flags, fout)
 
@@ -131,18 +129,21 @@ def main(_):
         qa.train(sess)
 
         print("Evaluating answer")
-        qa.evaluate_answer(sess, vocab, FLAGS.evaluate, log=True)
+        qa.evaluate_answer(sess, dataset['vocab'], FLAGS.evaluate, log=True)
 
 
-def process_training(qa, vocab):
+def load_dataset(data_dir):
     print("Loading training data")
-    dataset = {}
-    dataset['contexts'] = load_data_file('train.ids.context')
-    dataset['questions'] = load_data_file('train.ids.question')
-    dataset['spans'] = load_data_file('train.span')
-    dataset['vocab'] = vocab
+    with open(os.path.join(data_dir, 'vocab.dat'), "rb") as f:
+        vocab = [str(l).strip() for l in f.readlines()]
 
-    qa.process_dataset(dataset)
+    dataset = {}
+    dataset['contexts'] = load_data_file(data_dir, 'train.ids.context')
+    dataset['questions'] = load_data_file(data_dir, 'train.ids.question')
+    dataset['spans'] = load_data_file(data_dir, 'train.span')
+    dataset['vocab'] = vocab
+    return dataset
+
 
 if __name__ == "__main__":
     tf.app.run()

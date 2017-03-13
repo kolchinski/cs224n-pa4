@@ -157,24 +157,31 @@ class QASepSystem(qa_model.QASystem):
         self.train_spans = all_spans = dataset['spans']
         self.vocab = dataset['vocab']
 
-        pad_qs, self.max_q_len = self.pad_and_max_len(all_qs)
-        pad_ctxs, self.max_c_len = self.pad_and_max_len(all_cs)
+        self.max_q_len = max_q_length or max(all_qs, key=len)
+        self.max_c_len = max_c_length or max(all_cs, key=len)
 
-        if max_c_length:
-            all_spans = (s for s in all_spans if len(s) <= max_c_length)
-        else:
-            max_c_length = len(pad_ctxs[0])  # because the are already all max len
+        pad_qs, pad_cs, pad_spans, seq_ends = (list() for i in range(4))
+        for q, c, span, vocab in zip(all_qs, all_cs, all_spans, self.vocab):
+            if len(q) > max_q_length:
+                continue
+            if len(c) > max_c_length:
+                continue
+            pad_qs.append(self.pad_ele(q, self.max_q_len))
+            pad_cs.append(self.pad_ele(c, self.max_c_len))
+            start, end = span
+            pad_spans.append(self.selector_sequence(start, end, self.max_c_len))
+            seq_ends.append((len(q), len(c)))
 
-        padded_spans = [self.selector_sequence(start, end, max_c_length)
-                        for start, end in all_spans]
-
-        seq_ends = [(len(q), len(c)) for q, c in zip(all_qs, all_cs)]
-        all_qs = list(zip(pad_qs, pad_ctxs, padded_spans, seq_ends))
-        # random.shuffle(all_qs)  # change the train/validation set from run to run
-
+        # now we sort the whole thing
+        all_qs = list(zip(pad_qs, pad_cs, pad_spans, seq_ends))
         train_size = int(len(all_qs) * .8)
         self.train_qas = all_qs[:train_size]
         self.dev_qas = all_qs[train_size:]
+
+        sort_alg = lambda x: x[3][2] + x[3][1] / 1000  # small bias for quesiton length
+        self.train_qas.sort(key=sort_alg)
+        self.dev_qas.sort(key=sort_alg)
+
 
     @staticmethod
     def pad_vocab_ids(seqs, max_len=None):
@@ -187,7 +194,11 @@ class QASepSystem(qa_model.QASystem):
     @staticmethod
     def pad_and_max_len(seqs):
         max_len = max((len(s) for s in seqs))
-        return [s + (max_len - len(s)) * [0] for s in seqs], max_len
+        return [QASepSystem.pad_ele(s, max_len) for s in seqs], max_len
+
+    @staticmethod
+    def pad_ele(seq, max_len):
+        return seq + (max_len - len(seq)) * [0]
 
     def train_on_batch(self, session, batch_data):
         """Perform one step of gradient descent on the provided batch of data.
