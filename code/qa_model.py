@@ -371,7 +371,7 @@ class QASystem(object):
         :param qas_set:  list of [question, seq]
         :return: batched lists of [question, seq]
         """
-        random.shuffle(qas_set)  # make different batches each time
+        # random.shuffle(qas_set)  # make different batches each time
 
         batch_size = FLAGS.batch_size
         num_batches = len(qas_set)//batch_size
@@ -380,6 +380,7 @@ class QASystem(object):
         batches = [qas_set[b_num * batch_size: (b_num + 1) * batch_size]
                    for b_num in range(num_batches)]
 
+        random.shuffle(batches)
         return batches
 
     def train(self, session):

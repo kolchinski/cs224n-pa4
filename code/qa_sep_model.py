@@ -160,7 +160,9 @@ class QASepSystem(qa_model.QASystem):
         self.max_q_len = max_q_length or max(all_qs, key=len)
         self.max_c_len = max_c_length or max(all_cs, key=len)
 
-        pad_qs, pad_cs, pad_spans, seq_ends = (list() for i in range(4))
+        # build the padded questions, contexts, spans, lengths
+        pad_qs, pad_cs, pad_spans, seq_lens = (list() for i in range(4))
+
         for q, c, span, vocab in zip(all_qs, all_cs, all_spans, self.vocab):
             if len(q) > max_q_length:
                 continue
@@ -170,10 +172,10 @@ class QASepSystem(qa_model.QASystem):
             pad_cs.append(self.pad_ele(c, self.max_c_len))
             start, end = span
             pad_spans.append(self.selector_sequence(start, end, self.max_c_len))
-            seq_ends.append((len(q), len(c)))
+            seq_lens.append((len(q), len(c)))
 
         # now we sort the whole thing
-        all_qs = list(zip(pad_qs, pad_cs, pad_spans, seq_ends))
+        all_qs = list(zip(pad_qs, pad_cs, pad_spans, seq_lens))
         train_size = int(len(all_qs) * .8)
         self.train_qas = all_qs[:train_size]
         self.dev_qas = all_qs[train_size:]
