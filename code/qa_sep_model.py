@@ -128,6 +128,10 @@ class NaiveBiDecoder(object):
 
     def decode(self, init_state, inputs, input_lens, masks, dropout):
         init_state_fw, init_state_bw = init_state
+        inputs_fw, inputs_bw = inputs
+        #TODO: Fix this, should be doing something better than just adding the fwd and backwd encodings
+        inputs = inputs[0] + inputs[1]
+
 
         with vs.variable_scope("decoder"):
             cell = tf.nn.rnn_cell.LSTMCell(self.hidden_size, use_peepholes=False)
