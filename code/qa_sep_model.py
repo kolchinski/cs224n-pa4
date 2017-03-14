@@ -169,8 +169,8 @@ class NaiveBiDecoder(object):
     def decode(self, init_state, inputs, input_lens, masks, dropout):
         init_state_fw, init_state_bw = init_state
         inputs_fw, inputs_bw = inputs
-        #TODO: Fix this, should be doing something better than just adding the fwd and backwd encodings
-        inputs = inputs[0] + inputs[1]
+        #Stack forward and backward input vectors along embedding dimension
+        inputs = tf.concat(2, [inputs_fw, inputs_bw])
 
 
         with vs.variable_scope("decoder"):
@@ -190,11 +190,9 @@ class NaiveBiDecoder(object):
         w = tf.get_variable("W_final", (2*self.hidden_size, 1), tf.float32, xav_init)
         b = tf.get_variable("b_final", (1,), tf.float32, tf.constant_initializer(0.0))
 
-        #Fix this - need to stack forward and backward outputs
-        word_res_fw = tf.reshape(outputs_fw, [-1, self.hidden_size])
-        word_res_bw = tf.reshape(outputs_bw, [-1, self.hidden_size])
-        word_res = tf.concat(1, [word_res_fw, word_res_bw])
+        word_res = tf.concat(2, [outputs_fw, outputs_bw])
 
+        word_res = tf.reshape(word_res, [-1, 2*self.hidden_size])
         inner = tf.matmul(word_res, w) + b
         word_res = tf.nn.sigmoid(inner)
         word_res = tf.reshape(word_res, [-1, self.output_size])
@@ -214,8 +212,8 @@ class QASepSystem(qa_model.QASystem):
         # ==== set up placeholder tokens ========
         # Question and context sequences
         self.encoder = BiEncoder(self.hidden_size, self.in_size)
-        #self.decoder = NaiveBiDecoder(self.max_c_len, self.hidden_size)
-        self.decoder = AttentionBiDecoder(self.max_c_len, self.hidden_size)
+        self.decoder = NaiveBiDecoder(self.max_c_len, self.hidden_size)
+        #self.decoder = AttentionBiDecoder(self.max_c_len, self.hidden_size)
 
         self.q_placeholder = tf.placeholder(tf.int32, (None, self.max_q_len))
         self.ctx_placeholder = tf.placeholder(tf.int32, (None, self.max_c_len))
@@ -258,8 +256,10 @@ class QASepSystem(qa_model.QASystem):
         hidden_rep = self.encoder.encode(embeds["q"], self.q_len_pholder, embeds["ctx"],
                                          self.c_len_pholder, self.dropout_placeholder)
         q_out, q_state, c_out, c_states = hidden_rep
-        res = self.decoder.decode(q_state, q_out, c_out, self.c_len_pholder, self.mask_placeholder,
+        res = self.decoder.decode(q_state, c_out, self.c_len_pholder, self.mask_placeholder,
                                   self.dropout_placeholder)
+        #res = self.decoder.decode(q_state, q_out, c_out, self.c_len_pholder, self.mask_placeholder,
+        #                          self.dropout_placeholder)
         return res
 
     def process_dataset(self, dataset, max_q_length=None, max_c_length=None):
