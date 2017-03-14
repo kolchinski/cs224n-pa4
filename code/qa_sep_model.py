@@ -63,34 +63,52 @@ class AttentionBiDecoder(object):
         init_state_fw, init_state_bw = init_state
 
         #TODO: Fix this, should be doing something better than just adding the fwd and backwd encodings
-        q_embeds = q_embeds[0] + q_embeds[1]
-        c_embeds = c_embeds[0] + c_embeds[1]
+        #q_embeds = q_embeds[0] + q_embeds[1]
+        #c_embeds = c_embeds[0] + c_embeds[1]
+        q_embeds_fw, q_embeds_bw = q_embeds
+        c_embeds_fw, c_embeds_bw = c_embeds
 
-        inputs = c_embeds
+        #inputs = c_embeds[0] + c_embeds[1]
 
-        with vs.variable_scope("decoder"):
+        with vs.variable_scope("decoder") as scope:
             cell = tf.nn.rnn_cell.LSTMCell(self.hidden_size, use_peepholes=False)
             cell = tf.nn.rnn_cell.DropoutWrapper(cell, output_keep_prob = 1.0 - dropout)
+            #Run the decoder LSTM on the outputs of the forward encoder
             outputs, states = tf.nn.bidirectional_dynamic_rnn(
                 cell_fw=cell, cell_bw=cell,
-                sequence_length=input_lens, dtype=tf.float32, inputs=inputs,
+                sequence_length=input_lens, dtype=tf.float32, inputs=c_embeds_fw,
                 initial_state_bw=init_state_bw, initial_state_fw=init_state_fw,
                 swap_memory=True
                 )
             outputs_fw, outputs_bw = outputs
+            states_fw, states_bw = states
+
+            #Use the same synapse weights for the second phase of the LSTM!
+            scope.reuse_variables()
+
+            #Then, run the *same* LSTM, continuing where we left off but now on the backward encodings
+            outputs, states = tf.nn.bidirectional_dynamic_rnn(
+                cell_fw=cell, cell_bw=cell,
+                sequence_length=input_lens, dtype=tf.float32, inputs=c_embeds_bw,
+                initial_state_bw=states_bw, initial_state_fw=states_fw,
+                swap_memory=True
+            )
+            outputs_fw, outputs_bw = outputs
+            states_fw, states_bw = states
 
 
-        ## Attention mechanism code follows
+        ## Attention mechanism code follows (implemented as post-decoder global attention initially)
         ## For reference, see paper at http://nlp.stanford.edu/pubs/emnlp15_attn.pdf
         ## and post at https://piazza.com/class/iw9g8b9yxp46s8?cid=2106
 
         #H states from encoder LSTMs (concatenated),
         # dimensions (batch size) x (question length + context length) x (embedding size)
-        qc_embed = tf.concat(1, [q_embeds, c_embeds])
+        qc_embed = tf.concat(1, [q_embeds_fw, q_embeds_bw, c_embeds_fw, c_embeds_bw])
 
         #H-states from decoder LSTM, dimensions (batch size) x (context length) x (embedding size)
         #TODO: Change this from summation to concatenation too
-        decodings = outputs[0] + outputs[1]
+        #decodings = outputs[0] + outputs[1]
+        decodings = tf.concat(1, [outputs_fw, outputs_bw])
 
         xav_init = tf.contrib.layers.xavier_initializer()
         #Compute the bilinear product of encoder and decoder outputs to generate the attention weights vector
@@ -103,7 +121,7 @@ class AttentionBiDecoder(object):
         m1 = tf.matmul(tf.reshape(qc_embed,[-1, self.hidden_size]), w_a)
         m1 = tf.reshape(m1, [-1, self.hidden_size, tf.shape(qc_embed)[1]])
 
-        #Now, multiply the (b x d x n) matrix by a (b x m x d) matrix to get a (b x m x n) matrix...?
+        #Now, multiply the (b x d x n) matrix by a (b x m x d) matrix to get a (b x m x n) matrix
         pairwise_scores = tf.matmul(decodings, m1)
 
         #Now, apply softmax to get the actual attention weights - softmax automatically normalizes over the last dim
@@ -131,8 +149,12 @@ class AttentionBiDecoder(object):
         #predicted probability that the word at a given position of a given batch is part of the answer
         #Final output shape: (batch size) x (context length)
         w_s = tf.get_variable("W_s", (self.hidden_size, 1), tf.float32, xav_init)
-        m1 = tf.reshape(tf.matmul(h_tilde,w_s), [-1, tf.shape(c_embeds)[1]])
-        word_res = tf.nn.sigmoid(m1)
+        m1 = tf.reshape(tf.matmul(h_tilde,w_s), [tf.shape(c_embeds_fw)[0], -1])
+        eye = np.eye(c_embeds_fw.get_shape().as_list()[1])
+        #matrix to take concat(fwd,bwd) encodings and sum them into (fwd+bwd)
+        fold_sum_w = tf.constant(np.concatenate((eye,eye)), dtype=tf.float32)
+        m2 = tf.matmul(m1, fold_sum_w)
+        word_res = tf.nn.sigmoid(m2)
 
         #zero out irrelevant positions (before and after context) of predictions
         word_res = word_res * masks
