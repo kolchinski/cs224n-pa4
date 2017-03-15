@@ -203,6 +203,39 @@ class NaiveBiDecoder(object):
         word_res = word_res * masks
         return word_res
 
+    def coattention(self, q_embeddings, c_embeddings):
+        q_embed_transpose = tf.transpose(q_embedings, perm=[0, 2, 1])
+        # computing unnormalized affinity matrix
+        unnorm_affinity = tf.batch_matmul(c_embeddings, q_embed_transpose) #batch_size, context, question
+        # shape = (batch, question, context)
+        unnorm_affinity_t = tf.transpose(unnorm_affinity, perm=[0,2,1])
+        # compute row-wise normalized wrt question (dimensions: context, question)
+        norm_wrt_q = tf.map_fn(lambda x: tf.nn.softmax(x),unnorm_affinity_t,dtype=tf.float32)
+        # compute col-wise wrt context (dimensions: question, context)
+        norm_wrt_c = tf.map_fn(lambda x: tf.nn.softmax(x),unnorm_affinity,dtype=tf.float32)
+        # summaries wrt question
+        summ_wrt_q = tf.batch_matmul(norm_wrt_q, c_embeddings)
+        summ_q_embed = tf.concat(1, [q_embed_transpose, tf.transpose(summ_wrt_q, perm=[0, 2 ,1])])
+        # summaries of previous attention with respect to context
+        summ_wrt_c = tf.batch_matmul(summ_q_embed, norm_wrt_c, adj_y=True)
+        # final coattention context, (batch_size, context+1, 3*hidden_size)
+        co_att = tf.concat(2, [c_embeddings, tf.transpose(summ_wrt_c, perm=[0, 2, 1])])
+
+        #LSTM for encoding
+        cell_forward = tf.nn.rnn_cell.LSTMCell(hidden_size)
+        cell_backward = tf.nn.rnn_cell.LSTMCell(hidden_size)
+        # compute coattention encoding
+        
+        # u, _ = tf.nn.bidirectional_dynamic_rnn(cell_fw, cell_bw, co_att, sequence_length=tf.to_int64([max_timesteps]*batch_size),dtype=tf.float32) 
+        # self._u = tf.concat(2, u)
+
+
+
+
+
+
+
+
 
 class QASepSystem(qa_model.QASystem):
     def __init__(self, input_size, hidden_size, output_size, *args):
@@ -355,3 +388,4 @@ class QASepSystem(qa_model.QASystem):
                 np.mean(pred_probs), np.sum(pred_spans)))
 
         return f1, em
+
