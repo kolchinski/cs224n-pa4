@@ -31,16 +31,18 @@ class BiEncoder(object):
         cell = tf.nn.rnn_cell.DropoutWrapper(cell, output_keep_prob = 1.0 - dropout)
 
         #Run the first BiLSTM on the questions
-        with tf.variable_scope("ques"):
+        with tf.variable_scope("encoder") as scope:
             q_outputs, q_states = tf.nn.bidirectional_dynamic_rnn(
                 cell_fw=cell, cell_bw=cell,
                 sequence_length=q_lens, inputs=qs, dtype=tf.float32,
                 swap_memory=True)
 
-        q_states_fw, q_states_bw = q_states
+            q_states_fw, q_states_bw = q_states
 
-        #Run the second BiLSTM on the contexts, starting with the hidden states from the question BiLSTM
-        with tf.variable_scope("c_en"):
+            #Keep the same parameters for encoding questions and contexts
+            scope.reuse_variables()
+
+            #Run the BiLSTM on the contexts, starting with the hidden states from the questions
             c_outputs, c_states = tf.nn.bidirectional_dynamic_rnn(
                 cell_fw=cell, cell_bw=cell,
                 sequence_length=c_lens, inputs=cs, dtype=tf.float32,
@@ -187,6 +189,8 @@ class NaiveBiDecoder(object):
 
         xav_init = tf.contrib.layers.xavier_initializer()
 
+        #output two values instead of 1? for positive and negative class
+        #then run through softmax
         w = tf.get_variable("W_final", (2*self.hidden_size, 1), tf.float32, xav_init)
         b = tf.get_variable("b_final", (1,), tf.float32, tf.constant_initializer(0.0))
 
@@ -194,8 +198,9 @@ class NaiveBiDecoder(object):
 
         word_res = tf.reshape(word_res, [-1, 2*self.hidden_size])
         inner = tf.matmul(word_res, w) + b
-        word_res = tf.nn.sigmoid(inner)
-        word_res = tf.reshape(word_res, [-1, self.output_size])
+        #use relu and softmax here instead?
+        #inner = tf.nn.sigmoid(inner)
+        word_res = tf.reshape(inner, [-1, self.output_size])
 
         #zero out irrelevant positions (before and after context) of predictions
         word_res = word_res * masks
