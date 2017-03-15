@@ -139,8 +139,8 @@ class AttentionBiDecoder(object):
         #predicted probability that the word at a given position of a given batch is part of the answer
         #Final output shape: (batch size) x (context length)
         w_s = tf.get_variable("W_s", (self.hidden_size, 1), tf.float32, xav_init)
-        m1 = tf.reshape(tf.matmul(h_tilde,w_s), [tf.shape(c_embeds)[0], -1])
-        word_res = tf.nn.sigmoid(m1)
+        word_res = tf.reshape(tf.matmul(h_tilde,w_s), [tf.shape(c_embeds)[0], -1])
+        #word_res = tf.nn.sigmoid(word_res)
 
         #zero out irrelevant positions (before and after context) of predictions
         word_res = word_res * masks
