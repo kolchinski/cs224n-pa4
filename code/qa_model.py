@@ -117,16 +117,6 @@ class Decoder(object):
         another layer wouldn't be that useful.
         """
 
-    def decode_arbitration_layer(self, word_res, masks):
-        # If we are doing masking, we should also mask before this.
-        # that way the nn gets an accurate assessment of the actual probs
-        masked_wr = word_res * masks
-        xav_init = tf.contrib.layers.xavier_initializer()
-        w = tf.get_variable("W_arb", [FLAGS.max_length, FLAGS.max_length], tf.float32, xav_init)
-        b = tf.get_variable("B_arb", [FLAGS.max_length], tf.float32, tf.constant_initializer(0.0))
-        inner = tf.matmul(masked_wr, w) + b
-        return tf.nn.sigmoid(inner)
-
 
 
 class QASystem(object):
@@ -269,7 +259,7 @@ class QASystem(object):
 
         f1 = f1_score(pred_sent, gold_sent)
         em = exact_match_score(pred_sent, gold_sent)
-        return f1, em
+        return f1, em, pred_sent, gold_sent
 
     def train_on_batch(self, session, batch_data):
         """Perform one step of gradient descent on the provided batch of data.
@@ -305,6 +295,7 @@ class QASystem(object):
     def fit(self, sess, saver, train):
         losses = []
         for epoch in range(FLAGS.epochs):
+            self.epoch = epoch
             logging.info("Epoch %d out of %d", epoch + 1, FLAGS.epochs)
             loss = self.run_epoch(sess, train)
             saver.save(sess, FLAGS.output_path)
@@ -366,7 +357,7 @@ class QASystem(object):
         data = [0] * start + [1] * center + [0] * post
         return data
 
-    def build_batches(self, qas_set):
+    def build_batches(self, qas_set, shuffle=True):
         """
         :param qas_set:  list of [question, seq]
         :return: batched lists of [question, seq]
@@ -380,7 +371,9 @@ class QASystem(object):
         batches = [qas_set[b_num * batch_size: (b_num + 1) * batch_size]
                    for b_num in range(num_batches)]
 
-        random.shuffle(batches)
+        if shuffle:
+            random.shuffle(batches)
+
         return batches
 
     def train(self, session):

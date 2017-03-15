@@ -154,6 +154,8 @@ class NaiveBiDecoder(object):
         self.output_size = output_size
         self.hidden_size = hidden_size
 
+
+
     def decode(self, init_state, inputs, input_lens, masks, dropout):
         init_state_fw, init_state_bw = init_state
         inputs_fw, inputs_bw = inputs
@@ -218,13 +220,12 @@ class NaiveBiDecoder(object):
         # self._u = tf.concat(2, u)
 
 
-
-
 class QASepSystem(qa_model.QASystem):
     def __init__(self, input_size, hidden_size, output_size, *args):
         self.in_size = input_size
         self.hidden_size = hidden_size
         # self.out_size = output_size
+        self.eval_res_file = open(FLAGS.log_dir + "/eval_res.txt")
 
     def build_pipeline(self):
         # ==== set up placeholder tokens ========
@@ -279,6 +280,25 @@ class QASepSystem(qa_model.QASystem):
         res = self.decoder.decode(q_state, q_out, c_out, self.c_len_pholder, self.mask_placeholder,
                                   self.dropout_placeholder)
         return res
+
+    def decode_arbitration_layer(self, word_res, masks):
+        # If we are doing masking, we should also mask before this.
+        # that way the nn gets an accurate assessment of the actual probs
+        masked_wr = word_res * masks
+        res1_inner = self.simple_arb_layer(masked_wr, "arb_layer_1")
+        res1 = tf.nn.relu(res1_inner)
+        res2_inner = self.simple_arb_layer(res1, "arb_layer_2")
+        res2 = tf.nn.relu(res2_inner)  # we might not want this relu layer
+        masked_res = res2 * masks
+        return masked_res
+
+    def simple_arb_layer(self, inputs, layer_name):
+        with vs.variable_scope(layer_name):
+            xav_init = tf.contrib.layers.xavier_initializer()
+            w = tf.get_variable("W_arb", [self.max_c_len, self.max_c_len], tf.float32, xav_init)
+            b = tf.get_variable("B_arb", [self.max_c_len], tf.float32, tf.constant_initializer(0.0))
+            inner = tf.matmul(inputs, w) + b
+        return inner
 
     def process_dataset(self, dataset, max_q_length=None, max_c_length=None):
         self.train_contexts = all_cs = dataset['contexts']
@@ -354,14 +374,17 @@ class QASepSystem(qa_model.QASystem):
         return feed_dict
 
     def evaluate_answer(self, session, sample=500, log=True):
-        eval_set = random.sample(self.dev_qas, sample)
+        eval_set = list(random.sample(self.dev_qas, sample))
         q_vec, ctx_vec, gold_spans, masks = zip(*eval_set)
 
-        feed_dict = self.prepare_data(zip(*eval_set))
-        pred_probs, = session.run([self.results], feed_dict=feed_dict)
+        pred_probs = []
+        for batch in self.build_batches(eval_set, shuffle=False):
+            feed_dict = self.prepare_data(zip(*batch))
+            pred_probs.extend(session.run([self.results], feed_dict=feed_dict))
+
         pred_spans = [[int(m > 0.5) for m in n] for n in pred_probs]
 
-        f1s, ems = zip(*(self.eval_sentence(p, g, s)
+        f1s, ems, pred_s, gold_s = zip(*(self.eval_sentence(p, g, s)
                          for p, g, s in zip(pred_spans, gold_spans, ctx_vec)))
 
         f1 = np.mean(f1s)
@@ -371,6 +394,50 @@ class QASepSystem(qa_model.QASystem):
             logging.info("\nF1: {}, EM: {}, for {} samples".format(f1, em, sample))
             logging.info("{} mean prob; {} total words predicted".format(
                 np.mean(pred_probs), np.sum(pred_spans)))
+
+            # all the evaluate info
+            text = lambda vecs: ' '.join(self.vocab[i] for i in vecs)
+
+            # sorting into buckets
+            em_sents, partial_matches, no_match, empty = [[] for i in range(4)]
+            for ques, gold, our, is_em, sample_f1 in zip(q_vec, gold_s, pred_s, ems, f1s):
+                if len(our) == 0:
+                    empty.append((ques, gold))
+                elif is_em:
+                    em_sents.append((ques, gold))
+                elif sample_f1 > 0:
+                    partial_matches.append((ques, gold, our))
+                else:
+                    no_match.append((ques, gold, our))
+
+            self.eval_res_file.write("\n\nEpoch {}:".format(self.epoch))
+
+            # Yes, my fellow CS107 TAs will hate this....
+            if len(em_sents):
+                self.eval_res_file.write("Sample Exact Matches")
+                for ques, gold in em_sents[:5]:
+                    self.eval_res_file.write("Ques: " + text(ques))
+                    self.eval_res_file.write("Answ: " + gold)
+
+            if len(empty):
+                self.eval_res_file.write("Sents where we didn't predict anything")
+                for ques, gold in empty[:5]:
+                    self.eval_res_file.write("Ques: " + text(ques))
+                    self.eval_res_file.write("Answ: " + gold)
+
+            if len(partial_matches):
+                self.eval_res_file.write("Partial matches")
+                for ques, gold, our in partial_matches[:5]:
+                    self.eval_res_file.write("Ques: " + text(ques))
+                    self.eval_res_file.write("Answ: " + gold)
+                    self.eval_res_file.write("OurA: " + our)
+
+            if len(no_match):
+                self.eval_res_file.write("Partial matches")
+                for ques, gold, our in no_match[:5]:
+                    self.eval_res_file.write("Ques: " + text(ques))
+                    self.eval_res_file.write("Answ: " + gold)
+                    self.eval_res_file.write("OurA: " + our)
 
         return f1, em
 
