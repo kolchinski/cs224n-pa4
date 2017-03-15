@@ -31,8 +31,11 @@ hist(c_len, 20)
 print("span_end hist: ", )
 hist(list(zip(*all_spans))[1], 20)
 
+
+print("avg span_len: ", np.mean(span_len))
 print("span_len hist: ",)
 hist(span_len, 20)
+
 
 # start interactive mode
 IPython.embed()

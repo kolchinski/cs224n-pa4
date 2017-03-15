@@ -7,6 +7,8 @@ import os
 import tensorflow as tf
 import numpy as np
 
+import multiprocessing
+
 logging.basicConfig(level=logging.INFO)
 FLAGS = tf.app.flags.FLAGS
 
@@ -55,7 +57,7 @@ class BiEncoder(object):
         return q_outputs, q_states, c_outputs, c_states
 
 
-#Take in the output of the BiEncoder and turn it into a vector of probabilities
+# Take in the output of the BiEncoder and turn it into a vector of probabilities
 class AttentionBiDecoder(object):
     def __init__(self, output_size, hidden_size):
         self.output_size = output_size
@@ -64,16 +66,16 @@ class AttentionBiDecoder(object):
     def decode(self, init_state, q_embeds, c_embeds, input_lens, masks, dropout):
         init_state_fw, init_state_bw = init_state
 
-        #TODO: Fix this, should be doing something better than just adding the fwd and backwd encodings
-        #q_embeds = q_embeds[0] + q_embeds[1]
-        #c_embeds = c_embeds[0] + c_embeds[1]
+        # TODO: Fix this, should be doing something better than just adding the fwd and backwd encodings
+        # q_embeds = q_embeds[0] + q_embeds[1]
+        # c_embeds = c_embeds[0] + c_embeds[1]
         q_embeds_fw, q_embeds_bw = q_embeds
         q_embeds = tf.concat(2, [q_embeds_fw, q_embeds_bw])
 
         c_embeds_fw, c_embeds_bw = c_embeds
         c_embeds = tf.concat(2, [c_embeds_fw, c_embeds_bw])
 
-        #inputs = c_embeds[0] + c_embeds[1]
+        # inputs = c_embeds[0] + c_embeds[1]
 
         with vs.variable_scope("decoder") as scope:
             cell = tf.nn.rnn_cell.LSTMCell(self.hidden_size, use_peepholes=False)
@@ -89,9 +91,9 @@ class AttentionBiDecoder(object):
             states_fw, states_bw = states
 
 
-        ## Attention mechanism code follows (implemented as post-decoder global attention initially)
-        ## For reference, see paper at http://nlp.stanford.edu/pubs/emnlp15_attn.pdf
-        ## and post at https://piazza.com/class/iw9g8b9yxp46s8?cid=2106
+        # Attention mechanism code follows (implemented as post-decoder global attention initially)
+        # For reference, see paper at http://nlp.stanford.edu/pubs/emnlp15_attn.pdf
+        # and post at https://piazza.com/class/iw9g8b9yxp46s8?cid=2106
 
         #H states from encoder LSTMs (concatenated),
         # dimensions (batch size) x (question length + context length) x (embedding size)
@@ -166,8 +168,7 @@ class NaiveBiDecoder(object):
                 cell_fw=cell, cell_bw=cell,
                 sequence_length=input_lens, dtype=tf.float32, inputs=inputs,
                 initial_state_bw=init_state_bw, initial_state_fw=init_state_fw,
-                swap_memory=True
-                )
+                swap_memory=True )
             outputs_fw, outputs_bw = outputs
 
 
@@ -215,11 +216,6 @@ class NaiveBiDecoder(object):
         
         # u, _ = tf.nn.bidirectional_dynamic_rnn(cell_fw, cell_bw, co_att, sequence_length=tf.to_int64([max_timesteps]*batch_size),dtype=tf.float32) 
         # self._u = tf.concat(2, u)
-
-
-
-
-
 
 
 
@@ -274,11 +270,11 @@ class QASepSystem(qa_model.QASystem):
         return {"q": q_embed, "ctx": ctx_embed}
 
     def setup_system(self, embeds):
-        #def encode(self, qs, q_lens, cs, c_lens, dropout):
+        # def encode(self, qs, q_lens, cs, c_lens, dropout):
         hidden_rep = self.encoder.encode(embeds["q"], self.q_len_pholder, embeds["ctx"],
                                          self.c_len_pholder, self.dropout_placeholder)
         q_out, q_state, c_out, c_states = hidden_rep
-        #res = self.decoder.decode(q_state, c_out, self.c_len_pholder, self.mask_placeholder,
+        # res = self.decoder.decode(q_state, c_out, self.c_len_pholder, self.mask_placeholder,
         #                          self.dropout_placeholder)
         res = self.decoder.decode(q_state, q_out, c_out, self.c_len_pholder, self.mask_placeholder,
                                   self.dropout_placeholder)
