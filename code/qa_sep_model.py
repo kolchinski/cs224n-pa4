@@ -31,16 +31,18 @@ class BiEncoder(object):
         cell = tf.nn.rnn_cell.DropoutWrapper(cell, output_keep_prob = 1.0 - dropout)
 
         #Run the first BiLSTM on the questions
-        with tf.variable_scope("ques"):
+        with tf.variable_scope("encoder") as scope:
             q_outputs, q_states = tf.nn.bidirectional_dynamic_rnn(
                 cell_fw=cell, cell_bw=cell,
                 sequence_length=q_lens, inputs=qs, dtype=tf.float32,
                 swap_memory=True)
 
-        q_states_fw, q_states_bw = q_states
+            q_states_fw, q_states_bw = q_states
 
-        #Run the second BiLSTM on the contexts, starting with the hidden states from the question BiLSTM
-        with tf.variable_scope("c_en"):
+            #Keep the same parameters for encoding questions and contexts
+            scope.reuse_variables()
+
+            #Run the BiLSTM on the contexts, starting with the hidden states from the questions
             c_outputs, c_states = tf.nn.bidirectional_dynamic_rnn(
                 cell_fw=cell, cell_bw=cell,
                 sequence_length=c_lens, inputs=cs, dtype=tf.float32,
@@ -66,7 +68,10 @@ class AttentionBiDecoder(object):
         #q_embeds = q_embeds[0] + q_embeds[1]
         #c_embeds = c_embeds[0] + c_embeds[1]
         q_embeds_fw, q_embeds_bw = q_embeds
+        q_embeds = tf.concat(2, [q_embeds_fw, q_embeds_bw])
+
         c_embeds_fw, c_embeds_bw = c_embeds
+        c_embeds = tf.concat(2, [c_embeds_fw, c_embeds_bw])
 
         #inputs = c_embeds[0] + c_embeds[1]
 
@@ -76,23 +81,10 @@ class AttentionBiDecoder(object):
             #Run the decoder LSTM on the outputs of the forward encoder
             outputs, states = tf.nn.bidirectional_dynamic_rnn(
                 cell_fw=cell, cell_bw=cell,
-                sequence_length=input_lens, dtype=tf.float32, inputs=c_embeds_fw,
+                sequence_length=input_lens, dtype=tf.float32, inputs=c_embeds,
                 initial_state_bw=init_state_bw, initial_state_fw=init_state_fw,
                 swap_memory=True
                 )
-            outputs_fw, outputs_bw = outputs
-            states_fw, states_bw = states
-
-            #Use the same synapse weights for the second phase of the LSTM!
-            scope.reuse_variables()
-
-            #Then, run the *same* LSTM, continuing where we left off but now on the backward encodings
-            outputs, states = tf.nn.bidirectional_dynamic_rnn(
-                cell_fw=cell, cell_bw=cell,
-                sequence_length=input_lens, dtype=tf.float32, inputs=c_embeds_bw,
-                initial_state_bw=states_bw, initial_state_fw=states_fw,
-                swap_memory=True
-            )
             outputs_fw, outputs_bw = outputs
             states_fw, states_bw = states
 
@@ -103,23 +95,21 @@ class AttentionBiDecoder(object):
 
         #H states from encoder LSTMs (concatenated),
         # dimensions (batch size) x (question length + context length) x (embedding size)
-        qc_embed = tf.concat(1, [q_embeds_fw, q_embeds_bw, c_embeds_fw, c_embeds_bw])
+        qc_embed = tf.concat(1, [q_embeds, c_embeds])
 
-        #H-states from decoder LSTM, dimensions (batch size) x (context length) x (embedding size)
-        #TODO: Change this from summation to concatenation too
-        #decodings = outputs[0] + outputs[1]
-        decodings = tf.concat(1, [outputs_fw, outputs_bw])
+        #H-states from decoder LSTM, dimensions (batch size) x (context length) x (2*embedding size)
+        decodings = tf.concat(2, [outputs_fw, outputs_bw])
 
         xav_init = tf.contrib.layers.xavier_initializer()
         #Compute the bilinear product of encoder and decoder outputs to generate the attention weights vector
         # Final dimensions: (batch size) x (context length) x (question length + context length)
-        w_a = tf.get_variable("W_a", (self.hidden_size, self.hidden_size), tf.float32, xav_init)
+        w_a = tf.get_variable("W_a", (2*self.hidden_size, 2*self.hidden_size), tf.float32, xav_init)
         #This would be the right way to do it but this use of einsum is not supported in tf yet :(
         #pairwise_scores = tf.einsum('bnd,dd,bmd->bmn', qc_embed, w_a, decodings)
         #instead, proceed stepwise
         #step one produces a (batch size) x (hidden size) x (context length + question length)) matrix
-        m1 = tf.matmul(tf.reshape(qc_embed,[-1, self.hidden_size]), w_a)
-        m1 = tf.reshape(m1, [-1, self.hidden_size, tf.shape(qc_embed)[1]])
+        m1 = tf.matmul(tf.reshape(qc_embed,[-1, 2*self.hidden_size]), w_a)
+        m1 = tf.reshape(m1, [-1, 2*self.hidden_size, tf.shape(qc_embed)[1]])
 
         #Now, multiply the (b x d x n) matrix by a (b x m x d) matrix to get a (b x m x n) matrix
         pairwise_scores = tf.matmul(decodings, m1)
@@ -138,9 +128,9 @@ class AttentionBiDecoder(object):
 
         #Multiply the new state through by a matrix to convert it to a new "attentionified state"
         #Output shape: (batch size) x (context length) x (embedding size)
-        w_c = tf.get_variable("W_c", (2*self.hidden_size, self.hidden_size), tf.float32, xav_init)
+        w_c = tf.get_variable("W_c", (4*self.hidden_size, self.hidden_size), tf.float32, xav_init)
         #h_tilde = tf.einsum('bme,ed->bmd', extended_states, w_c)
-        m1 = tf.reshape(extended_states, [-1, 2*self.hidden_size])
+        m1 = tf.reshape(extended_states, [-1, 4*self.hidden_size])
         #h_tilde = tf.reshape(tf.matmul(m1, w_c), [-1, tf.shape(c_embeds)[0], self.hidden_size])
         #Don't reshape to lead into the next op more easily
         h_tilde = tf.matmul(m1, w_c)
@@ -149,12 +139,8 @@ class AttentionBiDecoder(object):
         #predicted probability that the word at a given position of a given batch is part of the answer
         #Final output shape: (batch size) x (context length)
         w_s = tf.get_variable("W_s", (self.hidden_size, 1), tf.float32, xav_init)
-        m1 = tf.reshape(tf.matmul(h_tilde,w_s), [tf.shape(c_embeds_fw)[0], -1])
-        eye = np.eye(c_embeds_fw.get_shape().as_list()[1])
-        #matrix to take concat(fwd,bwd) encodings and sum them into (fwd+bwd)
-        fold_sum_w = tf.constant(np.concatenate((eye,eye)), dtype=tf.float32)
-        m2 = tf.matmul(m1, fold_sum_w)
-        word_res = tf.nn.sigmoid(m2)
+        word_res = tf.reshape(tf.matmul(h_tilde,w_s), [tf.shape(c_embeds)[0], -1])
+        #word_res = tf.nn.sigmoid(word_res)
 
         #zero out irrelevant positions (before and after context) of predictions
         word_res = word_res * masks
@@ -169,8 +155,8 @@ class NaiveBiDecoder(object):
     def decode(self, init_state, inputs, input_lens, masks, dropout):
         init_state_fw, init_state_bw = init_state
         inputs_fw, inputs_bw = inputs
-        #TODO: Fix this, should be doing something better than just adding the fwd and backwd encodings
-        inputs = inputs[0] + inputs[1]
+        #Stack forward and backward input vectors along embedding dimension
+        inputs = tf.concat(2, [inputs_fw, inputs_bw])
 
 
         with vs.variable_scope("decoder"):
@@ -187,17 +173,18 @@ class NaiveBiDecoder(object):
 
         xav_init = tf.contrib.layers.xavier_initializer()
 
+        #output two values instead of 1? for positive and negative class
+        #then run through softmax
         w = tf.get_variable("W_final", (2*self.hidden_size, 1), tf.float32, xav_init)
         b = tf.get_variable("b_final", (1,), tf.float32, tf.constant_initializer(0.0))
 
-        #Fix this - need to stack forward and backward outputs
-        word_res_fw = tf.reshape(outputs_fw, [-1, self.hidden_size])
-        word_res_bw = tf.reshape(outputs_bw, [-1, self.hidden_size])
-        word_res = tf.concat(1, [word_res_fw, word_res_bw])
+        word_res = tf.concat(2, [outputs_fw, outputs_bw])
 
+        word_res = tf.reshape(word_res, [-1, 2*self.hidden_size])
         inner = tf.matmul(word_res, w) + b
-        word_res = tf.nn.sigmoid(inner)
-        word_res = tf.reshape(word_res, [-1, self.output_size])
+        #use relu and softmax here instead?
+        #inner = tf.nn.sigmoid(inner)
+        word_res = tf.reshape(inner, [-1, self.output_size])
 
         #zero out irrelevant positions (before and after context) of predictions
         word_res = word_res * masks
@@ -291,6 +278,8 @@ class QASepSystem(qa_model.QASystem):
         hidden_rep = self.encoder.encode(embeds["q"], self.q_len_pholder, embeds["ctx"],
                                          self.c_len_pholder, self.dropout_placeholder)
         q_out, q_state, c_out, c_states = hidden_rep
+        #res = self.decoder.decode(q_state, c_out, self.c_len_pholder, self.mask_placeholder,
+        #                          self.dropout_placeholder)
         res = self.decoder.decode(q_state, q_out, c_out, self.c_len_pholder, self.mask_placeholder,
                                   self.dropout_placeholder)
         return res
