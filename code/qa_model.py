@@ -132,14 +132,12 @@ class QASystem(object):
         self.decoder = decoder
         self.max_length = FLAGS.max_length
 
-
         # ==== set up placeholder tokens ========
         self.input_placeholder = tf.placeholder(tf.int32, (None, self.max_length))
         self.labels_placeholder = tf.placeholder(tf.float32, (None, self.max_length))
         self.seq_lengths_placeholder = tf.placeholder(tf.int32, (None))
         self.mask_placeholder = tf.placeholder(tf.float32, (None, self.max_length))
         self.dropout_placeholder = tf.placeholder(tf.float32, ())
-
 
         # ==== assemble pieces ====
         with tf.variable_scope("qa", initializer=tf.uniform_unit_scaling_initializer(1.0)):
@@ -185,10 +183,6 @@ class QASystem(object):
         Loads distributed word representations based on placeholder tokens
         :return:
         """
-        #with vs.variable_scope("embeddings"):
-        #with open(os.path.join(FLAGS.data_dir, 'glove.trimmed.100.npz')) as f:
-        #self.pretrained_embeddings = np.load(f)
-
         embed_path = FLAGS.embed_path or os.path.join(
             "data", "squad", "glove.trimmed.{}.npz".format(FLAGS.embedding_size))
         with open(embed_path, "rb") as f:
@@ -199,13 +193,10 @@ class QASystem(object):
         self.boundary_token_index = len(self.pretrained_embeddings) - 1
 
         # We now need to set up the tensorflow emedding
-
         embed = tf.Variable(self.pretrained_embeddings, dtype=tf.float32)
         embeddings = tf.nn.embedding_lookup(embed, self.input_placeholder)
         # embeddings = tf.reshape(extracted, (-1, self.max_length, FLAGS.embed_size))
-        ### END YOUR CODE
         return embeddings
-
 
     def evaluate_answer(self, session, sample=500, log=True):
         """
@@ -249,7 +240,6 @@ class QASystem(object):
                 np.mean(pred_probs), np.sum(pred_spans)))
 
         return f1, em
-
 
     def eval_sentence(self, preds_ind, gold_ind, sentence):
         pred_vecs = [s for s, p in zip(sentence, preds_ind) if p]

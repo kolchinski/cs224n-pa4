@@ -281,6 +281,7 @@ class QASepSystem(qa_model.QASystem):
         self.hidden_size = hidden_size
         # self.out_size = output_size
         self.eval_res_file = open(FLAGS.log_dir + "/eval_res.txt", 'w')
+        self.extra_log_process = None
 
     def build_pipeline(self):
         # ==== set up placeholder tokens ========
@@ -460,6 +461,9 @@ class QASepSystem(qa_model.QASystem):
         eval_set = list(random.sample(self.dev_qas, sample))
         q_vec, ctx_vec, gold_spans, masks = zip(*eval_set)
 
+        if self.extra_log_process:
+            self.extra_log_process.join()  # make sure it has finished by now
+
         pred_probs = []
         for batch in self.build_batches(eval_set, shuffle=False):
             feed_dict = self.prepare_data(zip(*batch))
@@ -475,53 +479,66 @@ class QASepSystem(qa_model.QASystem):
 
         if log:
             logging.info("\nF1: {}, EM: {}, for {} samples".format(f1, em, sample))
-            normalized_probs = np.mean(max(min(1, x), 0) for x in pred_probs)
+            normalized_probs = np.mean([max(min(1, x), 0) for x in np.array(pred_probs).flatten()])
             logging.info("{} mean prob, {} adjusted mean prob; {} total words predicted".format(
                 np.mean(pred_probs), normalized_probs, np.sum(pred_spans)))
 
-            # all the evaluate info
-            text = lambda vecs: ' '.join(self.vocab[i] for i in vecs)
+            if self.epoch % 5 == 1:
+                self.eval_res_file.write("\n\nEpoch {}:".format(self.epoch))
+                self.extended_log(self.vocab, self.eval_res_file, q_vec, gold_s, pred_s, ems, f1s)
 
-            # sorting into buckets
-            em_sents, partial_matches, no_match, empty = [[] for i in range(4)]
-            for ques, gold, our, is_em, sample_f1 in zip(q_vec, gold_s, pred_s, ems, f1s):
-                if len(our) == 0:
-                    empty.append((ques, gold))
-                elif is_em:
-                    em_sents.append((ques, gold))
-                elif sample_f1 > 0:
-                    partial_matches.append((ques, gold, our))
-                else:
-                    no_match.append((ques, gold, our))
-
-            self.eval_res_file.write("\n\nEpoch {}:".format(self.epoch))
-
-            # Yes, my fellow CS107 TAs will hate this....
-            if len(em_sents):
-                self.eval_res_file.write("Sample Exact Matches")
-                for ques, gold in em_sents[:5]:
-                    self.eval_res_file.write("Ques: " + text(ques))
-                    self.eval_res_file.write("Answ: " + gold)
-
-            if len(empty):
-                self.eval_res_file.write("Sents where we didn't predict anything")
-                for ques, gold in empty[:5]:
-                    self.eval_res_file.write("Ques: " + text(ques))
-                    self.eval_res_file.write("Answ: " + gold)
-
-            if len(partial_matches):
-                self.eval_res_file.write("Partial matches")
-                for ques, gold, our in partial_matches[:5]:
-                    self.eval_res_file.write("Ques: " + text(ques))
-                    self.eval_res_file.write("Answ: " + gold)
-                    self.eval_res_file.write("OurA: " + our)
-
-            if len(no_match):
-                self.eval_res_file.write("Partial matches")
-                for ques, gold, our in no_match[:5]:
-                    self.eval_res_file.write("Ques: " + text(ques))
-                    self.eval_res_file.write("Answ: " + gold)
-                    self.eval_res_file.write("OurA: " + our)
+            """
+            self.extra_log_process = \
+                multiprocessing.Process(target=self.extended_log,
+                                        args=(self.vocab, self.eval_res_file, q_vec, gold_s, pred_s, ems, f1s))
+            self.extra_log_process.start()
+            """""
 
         return f1, em
+
+    @staticmethod
+    def extended_log(vocab, eval_res_file, q_vec, gold_s, pred_s, ems, f1s):
+        # all the evaluate info
+        text = lambda vecs: ' '.join(vocab[i] for i in vecs)
+
+        # sorting into buckets
+        em_sents, partial_matches, no_match, empty = [[] for i in range(4)]
+        for ques, gold, our, is_em, sample_f1 in zip(q_vec, gold_s, pred_s, ems, f1s):
+            if len(our) == 0:
+                empty.append((ques, gold))
+            elif is_em:
+                em_sents.append((ques, gold))
+            elif sample_f1 > 0:
+                partial_matches.append((ques, gold, our))
+            else:
+                no_match.append((ques, gold, our))
+
+
+        # Yes, my fellow CS107 TAs will hate this....
+        if len(em_sents):
+            eval_res_file.write("Sample Exact Matches")
+            for ques, gold in em_sents[:5]:
+                eval_res_file.write("Ques: " + text(ques))
+                eval_res_file.write("Answ: " + gold)
+
+        if len(empty):
+            eval_res_file.write("Sents where we didn't predict anything")
+            for ques, gold in empty[:5]:
+                eval_res_file.write("Ques: " + text(ques))
+                eval_res_file.write("Answ: " + gold)
+
+        if len(partial_matches):
+            eval_res_file.write("Partial matches")
+            for ques, gold, our in partial_matches[:5]:
+                eval_res_file.write("Ques: " + text(ques))
+                eval_res_file.write("Answ: " + gold)
+                eval_res_file.write("OurA: " + our)
+
+        if len(no_match):
+            eval_res_file.write("Partial matches")
+            for ques, gold, our in no_match[:5]:
+                eval_res_file.write("Ques: " + text(ques))
+                eval_res_file.write("Answ: " + gold)
+                eval_res_file.write("OurA: " + our)
+
 
