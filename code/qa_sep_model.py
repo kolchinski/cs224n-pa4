@@ -59,26 +59,25 @@ class BiEncoder(object):
 
 # Encoder class for coattention
 class CoEncoder(object):
-    def __init__(self, hidden_size, vocab_dim):
+    def __init__(self, hidden_size, vocab_dim, c_len, q_len):
         self.hidden_size = hidden_size
         self.vocab_dim = vocab_dim
+        self.c_len = c_len
+        self.q_len = q_len
 
     def encode(self, qs, q_lens, cs, c_lens, dropout):
-        B = tf.shape(qs)[0] #batch size
-        Q = tf.shape(qs)[1] #length of questions
-        C = tf.shape(cs)[1] #length of contexts
-        L = self.hidden_size
+        Q = self.q_len #length of questions
+        C = self.c_len #length of contexts
+        hidden_size = self.hidden_size
 
-        cell = tf.nn.rnn_cell.LSTMCell(L)
+        cell = tf.nn.rnn_cell.LSTMCell(hidden_size)
         #cell = tf.nn.rnn_cell.DropoutWrapper(cell, output_keep_prob = 1.0 - dropout)
-
-        return cs
 
         #Run the first LSTM on the questions
         with tf.variable_scope("encoder") as scope:
             xav_init = tf.contrib.layers.xavier_initializer()
-            w_q = tf.get_variable("W_q", (L,L), tf.float32, xav_init)
-            b_q = tf.get_variable("b_q", (L), tf.float32, xav_init)
+            w_q = tf.get_variable("W_q", (hidden_size,hidden_size), tf.float32, xav_init)
+            b_q = tf.get_variable("b_q", (hidden_size), tf.float32, xav_init)
 
 
             q_outputs, q_states = tf.nn.dynamic_rnn(
@@ -86,8 +85,7 @@ class CoEncoder(object):
                 sequence_length=q_lens, dtype=tf.float32,
                 swap_memory=True)
 
-            #Keep the same parameters for encoding questions and contexts
-            scope.reuse_variables()
+            scope.reuse_variables() #Keep the same parameters for encoding questions and contexts
 
             #Run the LSTM on the contexts
             c_outputs, c_states = tf.nn.dynamic_rnn(
@@ -97,18 +95,21 @@ class CoEncoder(object):
 
 
             #Now append the sentinel to each batch
-            sentinel = tf.zeros([B,1,L])
-            d = tf.concat(1,[c_outputs, sentinel]) #dimensions BxC+1xL
-            q_prime = tf.concat(1,[q_outputs, sentinel]) #dimensions BxQ+1xL
+            #sentinel = tf.zeros([B,1,L])
+            sentinel_len = 0
+            #d = tf.concat(1,[c_outputs, sentinel]) #dimensions BxC+1xL
+            #q_prime = tf.concat(1,[q_outputs, sentinel]) #dimensions BxQ+1xL
 
+            doc = c_outputs
+            q_prime = q_outputs
 
-            q = tf.reshape(q_prime, [-1, L])
-            q = tf.reshape(tf.matmul(q, w_q), [B, Q + 1, L]) + b_q
+            q = tf.reshape(q_prime, [-1, hidden_size])
+            q = tf.reshape(tf.matmul(q, w_q), [-1, Q + sentinel_len, hidden_size]) + b_q
             q = tf.tanh(q)
 
             # Now, to calculate the coattention matrix etc
 
-            l = tf.matmul(d, tf.transpose(q, perm=[0,2,1])) #shape: BxC+1xQ+1
+            l = tf.matmul(doc, tf.transpose(q, perm=[0,2,1])) #shape: BxC+1xQ+1
 
             # for each context position, weights for corresponding question positions
             Aq = tf.nn.softmax(l) #shape: BxC+1xQ+1
@@ -117,7 +118,7 @@ class CoEncoder(object):
 
             # For each question index, a weighted sum of context word representations,
             # weighted by the attention paid to that
-            Cq = tf.matmul(tf.transpose(d, perm=[0,2,1]), Aq) #shape: BxLxQ+1
+            Cq = tf.matmul(tf.transpose(doc, perm=[0,2,1]), Aq) #shape: BxLxQ+1
             QCq = tf.concat(1, [tf.transpose(q, perm=[0,2,1]), Cq]) #shape: Bx2L*Q+1
             Cd = tf.matmul(QCq, Ad) #shape: Bx2LxC+1
             Cd = tf.transpose(Cd, perm=[0,2,1]) #shape: BxC+1x2L
@@ -127,13 +128,12 @@ class CoEncoder(object):
             # we stop when we hit the last index and output a 0 - is that cool?
             outputs, states = tf.nn.bidirectional_dynamic_rnn(
                 cell_fw=cell, cell_bw=cell,
-                sequence_length=tf.to_int32([C]*B),
+                sequence_length=c_lens,
                 dtype=tf.float32, inputs=Cd,
                 swap_memory=True)
 
-            outputs_fw, outputs_bw = outputs
-            outputs = tf.concat(2, [outputs_fw, outputs_bw]) #shape BxC+1x2L
-            outputs = tf.slice(outputs, [0,0,0], [B, C, 2*L ])
+            outputs = tf.concat(2, outputs) #shape BxC+1x2L
+            #outputs = tf.slice(outputs, [0,0,0], [B, C, 2*hidden_size ])
 
         return outputs
 
@@ -289,7 +289,8 @@ class QASepSystem(qa_model.QASystem):
             #self.decoder = NaiveBiDecoder(self.max_c_len, self.hidden_size)
             self.decoder = AttentionBiDecoder(self.max_c_len, self.hidden_size)
         elif FLAGS.coattention:
-            self.encoder = CoEncoder(self.hidden_size, self.in_size)
+            self.encoder = CoEncoder(self.hidden_size, self.in_size,
+                                           self.max_c_len, self.max_q_len)
             #self.decoder = CoDecoder(self.max_c_len, self.hidden_size)
 
         self.q_placeholder = tf.placeholder(tf.int32, (None, self.max_q_len))
@@ -352,11 +353,17 @@ class QASepSystem(qa_model.QASystem):
         # If we are doing masking, we should mask here as well as at the end.
         # that way the nn gets an accurate assessment of the actual probs
         xav_init = tf.contrib.layers.xavier_initializer()
-        w_debug = tf.get_variable("Wdebug", (self.hidden_size, 1), tf.float32, xav_init)
-        C = tf.shape(word_res)[1]
-        L = tf.shape(word_res)[2]
 
-        return tf.reshape(tf.matmul(tf.reshape(word_res, [-1,L]), w_debug), [-1, C])
+        #output two values instead of 1? for positive and negative class
+        #then run through softmax
+        w = tf.get_variable("W_final", (2*self.hidden_size, 1), tf.float32, xav_init)
+        b = tf.get_variable("b_final", (1,), tf.float32, tf.constant_initializer(0.0))
+
+        word_res_tmp = tf.reshape(word_res, [-1, 2*self.hidden_size])
+        inner = tf.matmul(word_res_tmp, w) + b
+        #use relu and softmax here instead?
+        #inner = tf.nn.sigmoid(inner)
+        word_res = tf.reshape(inner, [-1, self.max_c_len])
 
         masked_wr = word_res * masks
         res1_inner = self.simple_arb_layer(masked_wr, "arb_layer_1")
@@ -371,11 +378,7 @@ class QASepSystem(qa_model.QASystem):
             xav_init = tf.contrib.layers.xavier_initializer()
             w = tf.get_variable("W_arb", [self.max_c_len, self.max_c_len], tf.float32, xav_init)
             b = tf.get_variable("B_arb", [self.max_c_len], tf.float32, tf.constant_initializer(0.0))
-            C = tf.shape(inputs)[1]
-            L = tf.shape(inputs)[2]
-            inputs = tf.reshape(inputs, [-1,L])
             inner = tf.matmul(inputs, w) + b
-            inner = tf.reshape(inner, [-1, C, L])
         return inner
 
     def process_dataset(self, dataset, max_q_length=None, max_c_length=None):

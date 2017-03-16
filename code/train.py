@@ -94,6 +94,7 @@ def load_data_file(data_dir, name):
 
 def main(_):
     #embed_path = FLAGS.embed_path or pjoin("data", "squad", "glove.trimmed.{}.npz".format(FLAGS.embedding_size))
+    print(tf.__version__)
 
     os.chdir('..')
     # we never use this
