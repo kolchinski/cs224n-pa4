@@ -123,13 +123,15 @@ class CoEncoder(object):
             Cd = tf.matmul(QCq, Ad) #shape: Bx2LxC+1
             Cd = tf.transpose(Cd, perm=[0,2,1]) #shape: BxC+1x2L
 
+            DCd = tf.concat(2, [doc, Cd])
+
         with tf.variable_scope("encoder2") as scope:
             # Also concat with raw c representation like in github?
             # we stop when we hit the last index and output a 0 - is that cool?
             outputs, states = tf.nn.bidirectional_dynamic_rnn(
                 cell_fw=cell, cell_bw=cell,
                 sequence_length=c_lens,
-                dtype=tf.float32, inputs=Cd,
+                dtype=tf.float32, inputs=DCd,
                 swap_memory=True)
 
             outputs = tf.concat(2, outputs) #shape BxC+1x2L
