@@ -354,9 +354,10 @@ class QASystem(object):
         :return: batched lists of [question, seq]
         """
         # random.shuffle(qas_set)  # make different batches each time
+        import math
 
         batch_size = FLAGS.batch_size
-        num_batches = len(qas_set)//batch_size
+        num_batches = int(math.ceil(len(qas_set) / batch_size))
         print(num_batches, "batch_size: ", batch_size)
 
         batches = [qas_set[b_num * batch_size: (b_num + 1) * batch_size]
