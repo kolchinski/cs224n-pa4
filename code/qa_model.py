@@ -174,7 +174,8 @@ class QASystem(object):
             #previous_loss_metric = tf.reduce_mean(orig_loss)
             # now we need to weight the losses for missing the 1
             weighted_loss = (FLAGS.recall_multiplier * y + 1) * orig_loss
-            loss = tf.reduce_mean(weighted_loss)
+            clipped_loss = tf.clip_by_value(weighted_loss, 0, FLAGS.recall_multiplier * 2)
+            loss = tf.reduce_mean(clipped_loss)
             #loss = tf.Print(loss, [loss / previous_loss_metric])
 
         return loss

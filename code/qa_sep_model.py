@@ -288,8 +288,8 @@ class QASepSystem(qa_model.QASystem):
         res1_inner = self.simple_arb_layer(masked_wr, "arb_layer_1")
         res1 = tf.nn.relu(res1_inner)
         res2_inner = self.simple_arb_layer(res1, "arb_layer_2")
-        res2 = tf.nn.relu(res2_inner)  # we might not want this relu layer
-        masked_res = res2 * masks
+        # res2 = tf.nn.relu(res2_inner)  # we might not want this relu layer
+        masked_res = res2_inner * masks
         return masked_res
 
     def simple_arb_layer(self, inputs, layer_name):
