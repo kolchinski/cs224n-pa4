@@ -57,6 +57,87 @@ class BiEncoder(object):
         return q_outputs, q_states, c_outputs, c_states
 
 
+# Encoder class for coattention
+class CoEncoder(object):
+    def __init__(self, hidden_size, vocab_dim):
+        self.hidden_size = hidden_size
+        self.vocab_dim = vocab_dim
+
+    def encode(self, qs, q_lens, cs, c_lens, dropout):
+        B = tf.shape(qs)[0] #batch size
+        Q = tf.shape(qs)[1] #length of questions
+        C = tf.shape(cs)[1] #length of contexts
+        L = self.hidden_size
+
+        cell = tf.nn.rnn_cell.LSTMCell(L)
+        #cell = tf.nn.rnn_cell.DropoutWrapper(cell, output_keep_prob = 1.0 - dropout)
+
+        return cs
+
+        #Run the first LSTM on the questions
+        with tf.variable_scope("encoder") as scope:
+            xav_init = tf.contrib.layers.xavier_initializer()
+            w_q = tf.get_variable("W_q", (L,L), tf.float32, xav_init)
+            b_q = tf.get_variable("b_q", (L), tf.float32, xav_init)
+
+
+            q_outputs, q_states = tf.nn.dynamic_rnn(
+                cell=cell, inputs=qs,
+                sequence_length=q_lens, dtype=tf.float32,
+                swap_memory=True)
+
+            #Keep the same parameters for encoding questions and contexts
+            scope.reuse_variables()
+
+            #Run the LSTM on the contexts
+            c_outputs, c_states = tf.nn.dynamic_rnn(
+                cell=cell, inputs=cs,
+                sequence_length=c_lens, dtype=tf.float32,
+                swap_memory=True)
+
+
+            #Now append the sentinel to each batch
+            sentinel = tf.zeros([B,1,L])
+            d = tf.concat(1,[c_outputs, sentinel]) #dimensions BxC+1xL
+            q_prime = tf.concat(1,[q_outputs, sentinel]) #dimensions BxQ+1xL
+
+
+            q = tf.reshape(q_prime, [-1, L])
+            q = tf.reshape(tf.matmul(q, w_q), [B, Q + 1, L]) + b_q
+            q = tf.tanh(q)
+
+            # Now, to calculate the coattention matrix etc
+
+            l = tf.matmul(d, tf.transpose(q, perm=[0,2,1])) #shape: BxC+1xQ+1
+
+            # for each context position, weights for corresponding question positions
+            Aq = tf.nn.softmax(l) #shape: BxC+1xQ+1
+            # for each question position, weights for corresponding context positions
+            Ad = tf.nn.softmax(tf.transpose(l, perm=[0,2,1])) # shape: BxQ+1xC+1
+
+            # For each question index, a weighted sum of context word representations,
+            # weighted by the attention paid to that
+            Cq = tf.matmul(tf.transpose(d, perm=[0,2,1]), Aq) #shape: BxLxQ+1
+            QCq = tf.concat(1, [tf.transpose(q, perm=[0,2,1]), Cq]) #shape: Bx2L*Q+1
+            Cd = tf.matmul(QCq, Ad) #shape: Bx2LxC+1
+            Cd = tf.transpose(Cd, perm=[0,2,1]) #shape: BxC+1x2L
+
+        with tf.variable_scope("encoder2") as scope:
+            # Also concat with raw c representation like in github?
+            # we stop when we hit the last index and output a 0 - is that cool?
+            outputs, states = tf.nn.bidirectional_dynamic_rnn(
+                cell_fw=cell, cell_bw=cell,
+                sequence_length=tf.to_int32([C]*B),
+                dtype=tf.float32, inputs=Cd,
+                swap_memory=True)
+
+            outputs_fw, outputs_bw = outputs
+            outputs = tf.concat(2, [outputs_fw, outputs_bw]) #shape BxC+1x2L
+            outputs = tf.slice(outputs, [0,0,0], [B, C, 2*L ])
+
+        return outputs
+
+
 # Take in the output of the BiEncoder and turn it into a vector of probabilities
 class AttentionBiDecoder(object):
     def __init__(self, output_size, hidden_size):
@@ -154,8 +235,6 @@ class NaiveBiDecoder(object):
         self.output_size = output_size
         self.hidden_size = hidden_size
 
-
-
     def decode(self, init_state, inputs, input_lens, masks, dropout):
         init_state_fw, init_state_bw = init_state
         inputs_fw, inputs_bw = inputs
@@ -193,46 +272,25 @@ class NaiveBiDecoder(object):
         word_res = word_res * masks
         return word_res
 
-    def coattention(self, q_embeddings, c_embeddings):
-        q_embed_transpose = tf.transpose(q_embedings, perm=[0, 2, 1])
-        # computing unnormalized affinity matrix
-        unnorm_affinity = tf.batch_matmul(c_embeddings, q_embed_transpose) #batch_size, context, question
-        # shape = (batch, question, context)
-        unnorm_affinity_t = tf.transpose(unnorm_affinity, perm=[0,2,1])
-        # compute row-wise normalized wrt question (dimensions: context, question)
-        norm_wrt_q = tf.map_fn(lambda x: tf.nn.softmax(x),unnorm_affinity_t,dtype=tf.float32)
-        # compute col-wise wrt context (dimensions: question, context)
-        norm_wrt_c = tf.map_fn(lambda x: tf.nn.softmax(x),unnorm_affinity,dtype=tf.float32)
-        # summaries wrt question
-        summ_wrt_q = tf.batch_matmul(norm_wrt_q, c_embeddings)
-        summ_q_embed = tf.concat(1, [q_embed_transpose, tf.transpose(summ_wrt_q, perm=[0, 2 ,1])])
-        # summaries of previous attention with respect to context
-        summ_wrt_c = tf.batch_matmul(summ_q_embed, norm_wrt_c, adj_y=True)
-        # final coattention context, (batch_size, context+1, 3*hidden_size)
-        co_att = tf.concat(2, [c_embeddings, tf.transpose(summ_wrt_c, perm=[0, 2, 1])])
-
-        #LSTM for encoding
-        cell_forward = tf.nn.rnn_cell.LSTMCell(hidden_size)
-        cell_backward = tf.nn.rnn_cell.LSTMCell(hidden_size)
-        # compute coattention encoding
-        
-        # u, _ = tf.nn.bidirectional_dynamic_rnn(cell_fw, cell_bw, co_att, sequence_length=tf.to_int64([max_timesteps]*batch_size),dtype=tf.float32) 
-        # self._u = tf.concat(2, u)
-
 
 class QASepSystem(qa_model.QASystem):
-    def __init__(self, input_size, hidden_size, output_size, *args):
+    def __init__(self, input_size, hidden_size, *args):
         self.in_size = input_size
         self.hidden_size = hidden_size
         # self.out_size = output_size
-        self.eval_res_file = open(FLAGS.log_dir + "/eval_res.txt", "w")
+        self.eval_res_file = open(FLAGS.log_dir + "/eval_res.txt", 'w')
 
     def build_pipeline(self):
         # ==== set up placeholder tokens ========
-        # Question and context sequences
-        self.encoder = BiEncoder(self.hidden_size, self.in_size)
-        #self.decoder = NaiveBiDecoder(self.max_c_len, self.hidden_size)
-        self.decoder = AttentionBiDecoder(self.max_c_len, self.hidden_size)
+
+        if not FLAGS.coattention:
+            # Question and context sequences
+            self.encoder = BiEncoder(self.hidden_size, self.in_size)
+            #self.decoder = NaiveBiDecoder(self.max_c_len, self.hidden_size)
+            self.decoder = AttentionBiDecoder(self.max_c_len, self.hidden_size)
+        elif FLAGS.coattention:
+            self.encoder = CoEncoder(self.hidden_size, self.in_size)
+            #self.decoder = CoDecoder(self.max_c_len, self.hidden_size)
 
         self.q_placeholder = tf.placeholder(tf.int32, (None, self.max_q_len))
         self.ctx_placeholder = tf.placeholder(tf.int32, (None, self.max_c_len))
@@ -271,25 +329,41 @@ class QASepSystem(qa_model.QASystem):
         return {"q": q_embed, "ctx": ctx_embed}
 
     def setup_system(self, embeds):
-        # def encode(self, qs, q_lens, cs, c_lens, dropout):
-        hidden_rep = self.encoder.encode(embeds["q"], self.q_len_pholder, embeds["ctx"],
-                                         self.c_len_pholder, self.dropout_placeholder)
-        q_out, q_state, c_out, c_states = hidden_rep
-        # res = self.decoder.decode(q_state, c_out, self.c_len_pholder, self.mask_placeholder,
-        #                          self.dropout_placeholder)
-        res = self.decoder.decode(q_state, q_out, c_out, self.c_len_pholder, self.mask_placeholder,
-                                  self.dropout_placeholder)
+        if not FLAGS.coattention:
+            # def encode(self, qs, q_lens, cs, c_lens, dropout):
+            hidden_rep = self.encoder.encode(embeds["q"], self.q_len_pholder, embeds["ctx"],
+                                             self.c_len_pholder, self.dropout_placeholder)
+            q_out, q_state, c_out, c_states = hidden_rep
+            # res = self.decoder.decode(q_state, c_out, self.c_len_pholder, self.mask_placeholder,
+            #                          self.dropout_placeholder)
+            res = self.decoder.decode(q_state, q_out, c_out, self.c_len_pholder, self.mask_placeholder,
+                                      self.dropout_placeholder)
+
+        elif FLAGS.coattention:
+            encoding = self.encoder.encode(embeds["q"], self.q_len_pholder, embeds["ctx"],
+                                             self.c_len_pholder, self.dropout_placeholder)
+
+            #TODO: chop off last index along 1st axis of encoding?
+            res = self.decode_arbitration_layer(encoding, self.mask_placeholder)
+
         return res
 
     def decode_arbitration_layer(self, word_res, masks):
-        # If we are doing masking, we should also mask before this.
+        # If we are doing masking, we should mask here as well as at the end.
         # that way the nn gets an accurate assessment of the actual probs
+        xav_init = tf.contrib.layers.xavier_initializer()
+        w_debug = tf.get_variable("Wdebug", (self.hidden_size, 1), tf.float32, xav_init)
+        C = tf.shape(word_res)[1]
+        L = tf.shape(word_res)[2]
+
+        return tf.reshape(tf.matmul(tf.reshape(word_res, [-1,L]), w_debug), [-1, C])
+
         masked_wr = word_res * masks
         res1_inner = self.simple_arb_layer(masked_wr, "arb_layer_1")
         res1 = tf.nn.relu(res1_inner)
         res2_inner = self.simple_arb_layer(res1, "arb_layer_2")
-        # res2 = tf.nn.relu(res2_inner)  # we might not want this relu layer
-        masked_res = res2_inner * masks
+        res2 = tf.nn.relu(res2_inner)  # we might not want this relu layer
+        masked_res = res2 * masks
         return masked_res
 
     def simple_arb_layer(self, inputs, layer_name):
@@ -297,7 +371,11 @@ class QASepSystem(qa_model.QASystem):
             xav_init = tf.contrib.layers.xavier_initializer()
             w = tf.get_variable("W_arb", [self.max_c_len, self.max_c_len], tf.float32, xav_init)
             b = tf.get_variable("B_arb", [self.max_c_len], tf.float32, tf.constant_initializer(0.0))
+            C = tf.shape(inputs)[1]
+            L = tf.shape(inputs)[2]
+            inputs = tf.reshape(inputs, [-1,L])
             inner = tf.matmul(inputs, w) + b
+            inner = tf.reshape(inner, [-1, C, L])
         return inner
 
     def process_dataset(self, dataset, max_q_length=None, max_c_length=None):

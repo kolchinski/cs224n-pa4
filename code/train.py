@@ -17,6 +17,7 @@ from datetime import datetime
 logging.basicConfig(level=logging.INFO)
 
 
+tf.app.flags.DEFINE_float("coattention", 1, "Proportionality multiplier for false negative penalty")
 tf.app.flags.DEFINE_float("recall_multiplier", 200, "Proportionality multiplier for false negative penalty")
 tf.app.flags.DEFINE_float("learning_rate", 0.01, "Learning rate.")
 tf.app.flags.DEFINE_float("max_gradient_norm", 10.0, "Clip gradients to this norm.")
@@ -105,7 +106,7 @@ def main(_):
         os.makedirs(FLAGS.output_path)
 
     print("Building QASystem")
-    qa = QASepSystem(FLAGS.embedding_size, FLAGS.state_size, FLAGS.output_size)
+    qa = QASepSystem(FLAGS.embedding_size, FLAGS.state_size)
 
     dataset = load_dataset(FLAGS.data_dir)
     qa.process_dataset(dataset, max_c_length=300, max_q_length=30)
