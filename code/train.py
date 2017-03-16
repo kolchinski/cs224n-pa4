@@ -99,7 +99,10 @@ def main(_):
     # print("Initializing vocab")
     # vocab_path = FLAGS.vocab_path or pjoin(FLAGS.data_dir, "vocab.dat")
     # vocab, rev_vocab = initialize_vocab(vocab_path)
-
+    if not os.path.exists(FLAGS.log_dir):
+        os.makedirs(FLAGS.log_dir)
+    if not os.path.exists(FLAGS.output_path):
+        os.makedirs(FLAGS.output_path)
 
     print("Building QASystem")
     qa = QASepSystem(FLAGS.embedding_size, FLAGS.state_size, FLAGS.output_size)
@@ -107,11 +110,6 @@ def main(_):
     dataset = load_dataset(FLAGS.data_dir)
     qa.process_dataset(dataset, max_c_length=300, max_q_length=30)
     qa.build_pipeline()
-
-    if not os.path.exists(FLAGS.log_dir):
-        os.makedirs(FLAGS.log_dir)
-    if not os.path.exists(FLAGS.output_path):
-        os.makedirs(FLAGS.output_path)
 
     file_handler = logging.FileHandler(pjoin(FLAGS.log_dir, "log.txt"))
     logging.getLogger().addHandler(file_handler)

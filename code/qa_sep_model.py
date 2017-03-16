@@ -225,7 +225,7 @@ class QASepSystem(qa_model.QASystem):
         self.in_size = input_size
         self.hidden_size = hidden_size
         # self.out_size = output_size
-        self.eval_res_file = open(FLAGS.log_dir + "/eval_res.txt")
+        self.eval_res_file = open(FLAGS.log_dir + "/eval_res.txt", "w")
 
     def build_pipeline(self):
         # ==== set up placeholder tokens ========
@@ -380,7 +380,7 @@ class QASepSystem(qa_model.QASystem):
         pred_probs = []
         for batch in self.build_batches(eval_set, shuffle=False):
             feed_dict = self.prepare_data(zip(*batch))
-            pred_probs.extend(session.run([self.results], feed_dict=feed_dict))
+            pred_probs.extend(session.run([self.results], feed_dict=feed_dict)[0])
 
         pred_spans = [[int(m > 0.5) for m in n] for n in pred_probs]
 
@@ -392,8 +392,9 @@ class QASepSystem(qa_model.QASystem):
 
         if log:
             logging.info("\nF1: {}, EM: {}, for {} samples".format(f1, em, sample))
-            logging.info("{} mean prob; {} total words predicted".format(
-                np.mean(pred_probs), np.sum(pred_spans)))
+            normalized_probs = np.mean(max(min(1, x), 0) for x in pred_probs)
+            logging.info("{} mean prob, {} adjusted mean prob; {} total words predicted".format(
+                np.mean(pred_probs), normalized_probs, np.sum(pred_spans)))
 
             # all the evaluate info
             text = lambda vecs: ' '.join(self.vocab[i] for i in vecs)
