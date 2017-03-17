@@ -142,11 +142,8 @@ class NaiveCoDecoder(object):
             e_h = tf.reshape(e_h, [-1, self.hidden_size])
             inner = tf.matmul(e_h, w_e) + b_e
             inner = tf.reshape(inner, [-1, c_len])
-            #end_probs = tf.nn.softmax(inner)
             end_probs = inner
 
-
-        with vs.variable_scope("final_start_layer"):
             z = tf.concat(1, [start_probs, end_probs])
 
             wfs = tf.get_variable("W_f_s", [2*c_len, 2*c_len], tf.float32, xav_init)
@@ -158,19 +155,10 @@ class NaiveCoDecoder(object):
             #start_probs = tf.nn.relu(tf.matmul(z2, wfs2) + bfs2)
             start_probs = tf.matmul(z2, wfs2) + bfs2
 
-
-        with vs.variable_scope("final_end_layer"):
-            z = tf.concat(1, [start_probs, end_probs])
-
-            wfe = tf.get_variable("W_f_e", [2*c_len, 2*c_len], tf.float32, xav_init)
-            bfe = tf.get_variable("B_f_e", [2*c_len], tf.float32, tf.constant_initializer(0.0))
-            z2 = tf.nn.relu(tf.matmul(z, wfe) + bfe)
-
             wfe2 = tf.get_variable("W_f_e2", [2*c_len, c_len], tf.float32, xav_init)
             bfe2 = tf.get_variable("B_f_e2", [c_len], tf.float32, tf.constant_initializer(0.0))
             #end_probs = tf.nn.relu(tf.matmul(z2, wfe2) + bfe2)
             end_probs = tf.matmul(z2, wfe2) + bfe2
-
 
         return start_probs, end_probs
 
@@ -236,39 +224,6 @@ class QASepSystem(qa_model.QASystem):
                                   self.dropout_placeholder)
 
         return res
-
-    def decode_arbitration_layer(self, word_res, masks):
-        # If we are doing masking, we should mask here as well as at the end.
-        # that way the nn gets an accurate assessment of the actual probs
-        xav_init = tf.contrib.layers.xavier_initializer()
-
-        #output two values instead of 1? for positive and negative class
-        #then run through softmax
-        w = tf.get_variable("W_final", (2*self.hidden_size, 1), tf.float32, xav_init)
-        b = tf.get_variable("b_final", (1,), tf.float32, tf.constant_initializer(0.0))
-
-        word_res_tmp = tf.reshape(word_res, [-1, 2*self.hidden_size])
-        inner = tf.matmul(word_res_tmp, w) + b
-        #use relu and softmax here instead?
-        #inner = tf.nn.sigmoid(inner)
-        word_res = tf.reshape(inner, [-1, self.max_c_len])
-
-        masked_wr = word_res * masks
-        res1_inner = self.simple_arb_layer(masked_wr, "arb_layer_1")
-        #res1 = tf.nn.relu(res1_inner)
-        #res2_inner = self.simple_arb_layer(res1, "arb_layer_2")
-        #res2 = tf.nn.relu(res2_inner)  # we might not want this relu layer
-        res2 = res1_inner
-        masked_res = res2 * masks
-        return masked_res
-
-    def simple_arb_layer(self, inputs, layer_name):
-        with vs.variable_scope(layer_name):
-            xav_init = tf.contrib.layers.xavier_initializer()
-            w = tf.get_variable("W_arb", [self.max_c_len, self.max_c_len], tf.float32, xav_init)
-            b = tf.get_variable("B_arb", [self.max_c_len], tf.float32, tf.constant_initializer(0.0))
-            inner = tf.matmul(inputs, w) + b
-        return inner
 
     def setup_loss(self, final_res):
         """
