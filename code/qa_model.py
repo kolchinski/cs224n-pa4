@@ -13,19 +13,8 @@ from tensorflow.python.ops import variable_scope as vs
 from util import Progbar
 from evaluate import exact_match_score, f1_score
 
-
 logging.basicConfig(level=logging.INFO)
 FLAGS = tf.app.flags.FLAGS
-
-
-def get_optimizer(opt):
-    if opt == "adam":
-        optfn = tf.train.AdamOptimizer
-    elif opt == "sgd":
-        optfn = tf.train.GradientDescentOptimizer
-    else:
-        assert (False)
-    return optfn
 
 
 class Encoder(object):
@@ -88,7 +77,8 @@ class Decoder(object):
         with vs.variable_scope("decoder"):
             cell = tf.nn.rnn_cell.LSTMCell(self.hidden_size, use_peepholes=False)
             cell = tf.nn.rnn_cell.DropoutWrapper(cell, output_keep_prob = 1.0 - dropout)
-            word_res, _ = tf.nn.dynamic_rnn(cell, encode_out, sequence_length=seq_lengths, initial_state=encode_fstate)
+            word_res, _ = tf.nn.dynamic_rnn(cell, encode_out, sequence_length=seq_lengths,
+                                            initial_state=encode_fstate)
 
         # now I need a final classification layer
         # result is a vector that represents all outputs
@@ -107,16 +97,6 @@ class Decoder(object):
         word_res = self.decode_arbitration_layer(word_res, masks)
         word_res = word_res * masks
         return word_res
-
-    def decode_accum_layer(self, node_out):
-        """
-        :param node_out: Should be a 3d tensor [batch, num_nodes, word_rep]
-        :return: prediction tensor [batch, num_nodes
-        Consider a window based model.
-        Other stuff: note that we already do a shit ton of convolution and pooling,
-        another layer wouldn't be that useful.
-        """
-
 
 
 class QASystem(object):
@@ -172,8 +152,8 @@ class QASystem(object):
             #previous_loss_metric = tf.reduce_mean(orig_loss)
             # now we need to weight the losses for missing the 1
             weighted_loss = (FLAGS.recall_multiplier * y + 1) * orig_loss
-            clipped_loss = tf.clip_by_value(weighted_loss, 0, FLAGS.recall_multiplier * 2)
-            loss = tf.reduce_mean(clipped_loss)
+            # clipped_loss = tf.clip_by_value(weighted_loss, 0, FLAGS.recall_multiplier * 2)
+            loss = tf.reduce_mean(weighted_loss)
             #loss = tf.Print(loss, [loss / previous_loss_metric])
 
         return loss

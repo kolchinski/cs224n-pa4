@@ -417,7 +417,6 @@ class QASepSystem(qa_model.QASystem):
         self.train_qas.sort(key=sort_alg)
         self.dev_qas.sort(key=sort_alg)
 
-
     @staticmethod
     def pad_vocab_ids(seqs, max_len=None):
         if max_len is None:
