@@ -340,8 +340,8 @@ class QASepSystem(qa_model.QASystem):
         em = np.mean(ems)
 
         if log:
-            logging.info("\nF1: {}, EM: {}, for {} samples".format(f1, em, sample))
-            logging.info("Precision: {}, Recall: {}; {} total words predicted".format(
+            logging.info("F1: {}, EM: {}, for {} samples".format(f1, em, sample))
+            logging.info("Precision: {}, Recall: {}; {} total words predicted\n".format(
                 np.mean(precisions), np.mean(recalls), np.sum(pred_spans)))
 
             if self.epoch % 5 == 1:
