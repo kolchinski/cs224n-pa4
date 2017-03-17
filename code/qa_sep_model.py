@@ -144,6 +144,8 @@ class NaiveCoDecoder(object):
             inner = tf.reshape(inner, [-1, c_len])
             end_probs = inner
 
+
+        with vs.variable_scope("final_decoder_net"):
             z = tf.concat(1, [start_probs, end_probs])
 
             wfs = tf.get_variable("W_f_s", [2*c_len, 2*c_len], tf.float32, xav_init)

@@ -100,7 +100,7 @@ def main(_):
     #embed_path = FLAGS.embed_path or pjoin("data", "squad", "glove.trimmed.{}.npz".format(FLAGS.embedding_size))
     print(tf.__version__)
 
-    #os.chdir('..')
+    os.chdir('..')
     # we never use this
     # print("Initializing vocab")
     # vocab_path = FLAGS.vocab_path or pjoin(FLAGS.data_dir, "vocab.dat")
