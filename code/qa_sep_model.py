@@ -7,6 +7,8 @@ import os
 import tensorflow as tf
 import numpy as np
 
+import IPython
+
 import multiprocessing
 
 logging.basicConfig(level=logging.INFO)
@@ -370,9 +372,10 @@ class QASepSystem(qa_model.QASystem):
 
         masked_wr = word_res * masks
         res1_inner = self.simple_arb_layer(masked_wr, "arb_layer_1")
-        res1 = tf.nn.relu(res1_inner)
-        res2_inner = self.simple_arb_layer(res1, "arb_layer_2")
-        res2 = tf.nn.relu(res2_inner)  # we might not want this relu layer
+        #res1 = tf.nn.relu(res1_inner)
+        #res2_inner = self.simple_arb_layer(res1, "arb_layer_2")
+        #res2 = tf.nn.relu(res2_inner)  # we might not want this relu layer
+        res2 = res1_inner
         masked_res = res2 * masks
         return masked_res
 
