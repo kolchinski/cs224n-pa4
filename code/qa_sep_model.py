@@ -155,7 +155,8 @@ class NaiveCoDecoder(object):
 
             wfs2 = tf.get_variable("W_f_s2", [2*c_len, c_len], tf.float32, xav_init)
             bfs2 = tf.get_variable("B_f_s2", [c_len], tf.float32, tf.constant_initializer(0.0))
-            start_probs = tf.nn.relu(tf.matmul(z2, wfs2) + bfs2)
+            #start_probs = tf.nn.relu(tf.matmul(z2, wfs2) + bfs2)
+            start_probs = tf.matmul(z2, wfs2) + bfs2
 
 
         with vs.variable_scope("final_end_layer"):
@@ -167,7 +168,8 @@ class NaiveCoDecoder(object):
 
             wfe2 = tf.get_variable("W_f_e2", [2*c_len, c_len], tf.float32, xav_init)
             bfe2 = tf.get_variable("B_f_e2", [c_len], tf.float32, tf.constant_initializer(0.0))
-            end_probs = tf.nn.relu(tf.matmul(z2, wfe2) + bfe2)
+            #end_probs = tf.nn.relu(tf.matmul(z2, wfe2) + bfe2)
+            end_probs = tf.matmul(z2, wfe2) + bfe2
 
 
         return start_probs, end_probs
