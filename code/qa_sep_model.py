@@ -73,7 +73,7 @@ class CoEncoder(object):
         hidden_size = self.hidden_size
 
         cell = tf.nn.rnn_cell.LSTMCell(hidden_size)
-        #cell = tf.nn.rnn_cell.DropoutWrapper(cell, output_keep_prob = 1.0 - dropout)
+        cell = tf.nn.rnn_cell.DropoutWrapper(cell, output_keep_prob = 1.0 - dropout)
 
         #Run the first LSTM on the questions
         with tf.variable_scope("encoder") as scope:
@@ -284,9 +284,10 @@ class NaiveCoDecoder(object):
         self.hidden_size = hidden_size
 
     # Inputs of shape (Batch size) x (Context length) x (2*hidden_size)
-    def decode(self, inputs, lengths, c_len):
+    def decode(self, inputs, lengths, c_len, dropout):
 
         cell = tf.nn.rnn_cell.LSTMCell(self.hidden_size, use_peepholes=False)
+        cell = tf.nn.rnn_cell.DropoutWrapper(cell, output_keep_prob = 1.0 - dropout)
         xav_init = tf.contrib.layers.xavier_initializer()
 
         #Decoder for start positions
@@ -409,7 +410,8 @@ class QASepSystem(qa_model.QASystem):
 
         encoding = self.encoder.encode(embeds["q"], self.q_len_pholder, embeds["ctx"],
                                              self.c_len_pholder, self.dropout_placeholder)
-        res = self.decoder.decode(encoding, self.c_len_pholder, self.max_c_len)
+        res = self.decoder.decode(encoding, self.c_len_pholder, self.max_c_len,
+                                  self.dropout_placeholder)
 
         return res
 
