@@ -11,7 +11,7 @@ import tensorflow as tf
 from tensorflow.python.ops import variable_scope as vs
 
 from util import Progbar
-from evaluate import exact_match_score, f1_score
+from evaluate import exact_match_score, new_f1_score
 
 logging.basicConfig(level=logging.INFO)
 FLAGS = tf.app.flags.FLAGS
@@ -48,7 +48,7 @@ class QASystem(object):
         pred_sent = ' '.join(self.vocab[i] for i in pred_vecs)
         gold_sent = ' '.join(self.vocab[i] for i in gold_vecs)
 
-        f1 = f1_score(pred_sent, gold_sent)
+        f1 = new_f1_score(pred_sent, gold_sent)
         em = exact_match_score(pred_sent, gold_sent)
         return f1, em, pred_sent, gold_sent
 

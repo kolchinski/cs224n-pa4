@@ -355,7 +355,7 @@ class QASepSystem(qa_model.QASystem):
                      self.mask_placeholder: masks}
         return feed_dict
 
-    def evaluate_answer(self, session, sample=500, log=True):
+    def evaluate_answer(self, session, sample=2000, log=True):
         eval_set = list(random.sample(self.dev_qas, sample))
         q_vec, ctx_vec, gold_probs, masks = zip(*eval_set)
 
@@ -370,15 +370,17 @@ class QASepSystem(qa_model.QASystem):
         gold_spans = [self.selector_sequence(start, end, self.max_c_len) for start, end in gold_probs]
         pred_spans = [self.selector_sequence(start, end, self.max_c_len) for start, end in pred_probs]
 
-        f1s, ems, pred_s, gold_s = zip(*(self.eval_sentence(p, g, s)
+        f1_stuff, ems, pred_s, gold_s = zip(*(self.eval_sentence(p, g, s)
                          for p, g, s in zip(pred_spans, gold_spans, ctx_vec)))
 
+        precisions, recalls, f1s = zip(*f1_stuff)
         f1 = np.mean(f1s)
         em = np.mean(ems)
 
         if log:
             logging.info("\nF1: {}, EM: {}, for {} samples".format(f1, em, sample))
-            logging.info(" {} total words predicted".format(np.sum(pred_spans)))
+            logging.info("Precision: {}, Recall: {}; {} total words predicted".format(
+                np.mean(precisions), np.mean(recalls), np.sum(pred_spans)))
 
             if self.epoch % 5 == 1:
                 self.eval_res_file.write("\n\nEpoch {}:".format(self.epoch))
