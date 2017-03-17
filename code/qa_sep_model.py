@@ -378,9 +378,7 @@ class QASepSystem(qa_model.QASystem):
 
         if log:
             logging.info("\nF1: {}, EM: {}, for {} samples".format(f1, em, sample))
-            normalized_probs = np.mean([max(min(1, x), 0) for x in np.array(pred_probs).flatten()])
-            logging.info("{} mean prob, {} adjusted mean prob; {} total words predicted".format(
-                np.mean(pred_probs), normalized_probs, np.sum(pred_spans)))
+            logging.info(" {} total words predicted".format(np.sum(pred_spans)))
 
             if self.epoch % 5 == 1:
                 self.eval_res_file.write("\n\nEpoch {}:".format(self.epoch))
