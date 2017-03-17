@@ -115,6 +115,12 @@ class NaiveCoDecoder(object):
         cell = tf.nn.rnn_cell.DropoutWrapper(cell, output_keep_prob = 1.0 - dropout)
         xav_init = tf.contrib.layers.xavier_initializer()
 
+        with vs.variable_scope("pre_decoder"):
+            inputs, _ = tf.nn.dynamic_rnn(
+                cell=cell, inputs=inputs,
+                sequence_length=lengths, dtype=tf.float32,
+                swap_memory=True)
+
         #Decoder for start positions
         with vs.variable_scope("start_decoder"):
             s_h, _ = tf.nn.dynamic_rnn(
@@ -122,13 +128,13 @@ class NaiveCoDecoder(object):
                 sequence_length=lengths, dtype=tf.float32,
                 swap_memory=True)
 
-            #w_s = tf.get_variable("W_s", (self.hidden_size, 1), tf.float32, xav_init)
-            #b_s = tf.get_variable("b_s", (1,), tf.float32, tf.constant_initializer(0.0))
-            #s_h = tf.reshape(s_h, [-1, self.hidden_size])
-            #inner = tf.matmul(s_h, w_s) + b_s
-            #inner = tf.reshape(inner, [-1, c_len])
-            ##start_probs = tf.nn.softmax(inner)
-            #start_probs = inner
+            w_s = tf.get_variable("W_s", (self.hidden_size, 1), tf.float32, xav_init)
+            b_s = tf.get_variable("b_s", (1,), tf.float32, tf.constant_initializer(0.0))
+            s_h = tf.reshape(s_h, [-1, self.hidden_size])
+            inner = tf.matmul(s_h, w_s) + b_s
+            inner = tf.reshape(inner, [-1, c_len])
+            #start_probs = tf.nn.softmax(inner)
+            start_probs = inner
 
         #Decoder for start positions
         with vs.variable_scope("end_decoder"):
@@ -137,30 +143,30 @@ class NaiveCoDecoder(object):
                 sequence_length=lengths, dtype=tf.float32,
                 swap_memory=True)
 
-            #w_e = tf.get_variable("W_e", (self.hidden_size, 1), tf.float32, xav_init)
-            #b_e = tf.get_variable("b_e", (1,), tf.float32, tf.constant_initializer(0.0))
-            #e_h = tf.reshape(e_h, [-1, self.hidden_size])
-            #inner = tf.matmul(e_h, w_e) + b_e
-            #inner = tf.reshape(inner, [-1, c_len])
-            #end_probs = inner
-
-        with vs.variable_scope("final_decoder"):
-            both_h = tf.concat(2, [s_h, e_h])
-            both_h2, _ = tf.nn.dynamic_rnn(
-                cell=cell, inputs=both_h,
-                sequence_length=lengths, dtype=tf.float32,
-                swap_memory=True)
-            both_h2 = tf.reshape(both_h2, [-1, self.hidden_size])
-
-            w_s = tf.get_variable("W_s", (self.hidden_size, 1), tf.float32, xav_init)
-            b_s = tf.get_variable("b_s", (1,), tf.float32, tf.constant_initializer(0.0))
-            inner = tf.matmul(both_h2, w_s) + b_s
-            start_probs = tf.reshape(inner, [-1, c_len])
-
             w_e = tf.get_variable("W_e", (self.hidden_size, 1), tf.float32, xav_init)
             b_e = tf.get_variable("b_e", (1,), tf.float32, tf.constant_initializer(0.0))
-            inner = tf.matmul(both_h2, w_e) + b_e
-            end_probs = tf.reshape(inner, [-1, c_len])
+            e_h = tf.reshape(e_h, [-1, self.hidden_size])
+            inner = tf.matmul(e_h, w_e) + b_e
+            inner = tf.reshape(inner, [-1, c_len])
+            end_probs = inner
+
+        #with vs.variable_scope("final_decoder"):
+        #    both_h = tf.concat(2, [s_h, e_h])
+        #    both_h2, _ = tf.nn.dynamic_rnn(
+        #        cell=cell, inputs=both_h,
+        #        sequence_length=lengths, dtype=tf.float32,
+        #        swap_memory=True)
+        #    both_h2 = tf.reshape(both_h2, [-1, self.hidden_size])
+
+        #    w_s = tf.get_variable("W_s", (self.hidden_size, 1), tf.float32, xav_init)
+        #    b_s = tf.get_variable("b_s", (1,), tf.float32, tf.constant_initializer(0.0))
+        #    inner = tf.matmul(both_h2, w_s) + b_s
+        #    start_probs = tf.reshape(inner, [-1, c_len])
+
+        #    w_e = tf.get_variable("W_e", (self.hidden_size, 1), tf.float32, xav_init)
+        #    b_e = tf.get_variable("b_e", (1,), tf.float32, tf.constant_initializer(0.0))
+        #    inner = tf.matmul(both_h2, w_e) + b_e
+        #    end_probs = tf.reshape(inner, [-1, c_len])
 
         return start_probs, end_probs
 
