@@ -91,7 +91,8 @@ class QASystem(object):
             logging.info("Epoch %d out of %d", epoch + 1, FLAGS.epochs)
             f1 = self.run_epoch(sess, train)
             saver.save(sess, FLAGS.output_path)
-            if f1 > max(f1s, default=0):
+            f1_max = max(f1s) if len(f1s) > 0 else 0
+            if f1 > f1_max:
                 import shutil
                 best_dir = best_train_dir + "/best"
                 if os.path.exists(best_dir): shutil.rmtree(best_dir)
