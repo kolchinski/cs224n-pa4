@@ -145,31 +145,6 @@ class NaiveCoDecoder(object):
             end_probs = inner
 
 
-        with vs.variable_scope("final_decoder_net"):
-            z = tf.concat(1, [start_probs, end_probs])
-
-            wf = tf.get_variable("W_f", [2*c_len, c_len], tf.float32, xav_init)
-            bf = tf.get_variable("B_f", [c_len], tf.float32, tf.constant_initializer(0.0))
-            #try a tanh here instead?
-            z2 = tf.nn.relu(tf.matmul(z, wf) + bf)
-
-            wf2 = tf.get_variable("W_f2", [c_len, c_len], tf.float32, xav_init)
-            bf2 = tf.get_variable("B_f2", [c_len], tf.float32, tf.constant_initializer(0.0))
-            #try a tanh here instead?
-            z2 = tf.nn.relu(tf.matmul(z, wf) + bf)
-
-            #debug what exactly these matrices are learning
-
-            wfs2 = tf.get_variable("W_f_s2", [2*c_len, c_len], tf.float32, xav_init)
-            bfs2 = tf.get_variable("B_f_s2", [c_len], tf.float32, tf.constant_initializer(0.0))
-            #start_probs = tf.nn.relu(tf.matmul(z2, wfs2) + bfs2)
-            start_probs = tf.matmul(tf.concat(1, [start_probs, z2]), wfs2) + bfs2
-
-            wfe2 = tf.get_variable("W_f_e2", [2*c_len, c_len], tf.float32, xav_init)
-            bfe2 = tf.get_variable("B_f_e2", [c_len], tf.float32, tf.constant_initializer(0.0))
-            #end_probs = tf.nn.relu(tf.matmul(z2, wfe2) + bfe2)
-            end_probs = tf.matmul(tf.concat(1, [end_probs, z2]), wfe2) + bfe2
-
         return start_probs, end_probs
 
 
