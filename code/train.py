@@ -24,7 +24,7 @@ tf.app.flags.DEFINE_float("recall_multiplier", 200, "Proportionality multiplier 
 tf.app.flags.DEFINE_float("learning_rate", 0.001, "Learning rate.")
 tf.app.flags.DEFINE_float("max_gradient_norm", 10.0, "Clip gradients to this norm.")
 tf.app.flags.DEFINE_float("dropout", 0.15, "Fraction of units randomly dropped on non-recurrent connections.")
-tf.app.flags.DEFINE_integer("batch_size", 512, "Batch size to use during training.")
+tf.app.flags.DEFINE_integer("batch_size", 512 if is_azure else 10, "Batch size to use during training.")
 tf.app.flags.DEFINE_integer("epochs", 350, "Number of epochs to train.")
 tf.app.flags.DEFINE_integer("state_size", 200, "Size of each model layer.")
 tf.app.flags.DEFINE_integer("output_size", 750, "The output size of your model.")
