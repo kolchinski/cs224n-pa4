@@ -82,17 +82,26 @@ class QASystem(object):
             prog.update(i + 1, [("train loss", loss)])
         f1, em = self.evaluate_answer(sess, log=True)
 
-        return losses
+        return f1
 
-    def fit(self, sess, saver, train):
-        losses = []
+    def fit(self, sess, saver, train, best_train_dir):
+        f1s = []
         for epoch in range(FLAGS.epochs):
             self.epoch = epoch
             logging.info("Epoch %d out of %d", epoch + 1, FLAGS.epochs)
-            loss = self.run_epoch(sess, train)
+            f1 = self.run_epoch(sess, train)
             saver.save(sess, FLAGS.output_path)
-            losses.append(loss)
-        return losses
+            if f1 > max(f1s, default=0):
+                import shutil
+                best_dir = best_train_dir + "/best"
+                if os.path.exists(best_dir): shutil.rmtree(best_dir)
+                shutil.copytree(FLAGS.output_path, best_dir)
+                # also copy to the local best dir
+                local_best_dir = FLAGS.output_path + "/best"
+                if os.path.exists(local_best_dir): shutil.rmtree(local_best_dir)
+                shutil.copytree(FLAGS.output_path, local_best_dir)
+            f1s.append(f1)
+        return f1s
 
     def process_dataset(self, dataset):
         all_contexts = dataset['contexts']
@@ -169,7 +178,7 @@ class QASystem(object):
 
         return batches
 
-    def train(self, session):
+    def train(self, session, best_t_dir):
         """
         Implement main training loop
 
@@ -211,5 +220,5 @@ class QASystem(object):
         print("Session initialized, starting training")
 
         print("Start train function")
-        losses = self.fit(session, saver, self.train_qas)
+        losses = self.fit(session, saver, self.train_qas, best_t_dir)
 

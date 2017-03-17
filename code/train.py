@@ -87,7 +87,7 @@ def get_normalized_train_dir(train_dir):
     try:
         os.symlink(os.path.abspath(train_dir), global_train_dir)
     except Exception:
-        pass
+        return train_dir
     return global_train_dir
 
 
@@ -133,7 +133,7 @@ def main(_):
 
         print_all_vars()
         save_train_dir = get_normalized_train_dir(FLAGS.train_dir)
-        qa.train(sess)
+        qa.train(sess, save_train_dir)
 
         print("Evaluating answer")
         qa.evaluate_answer(sess, dataset['vocab'], FLAGS.evaluate, log=True)
