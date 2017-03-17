@@ -355,20 +355,24 @@ class QASepSystem(qa_model.QASystem):
         self.c_len_pholder = tf.placeholder(tf.int32, (None,))
 
         # True 1/0 labelings of words in the context
-        self.labels_placeholder = tf.placeholder(tf.float32, (None, self.max_c_len))
+        self.labels_placeholder = tf.placeholder(tf.float32, (None, 2))
 
         # 1/0 mask to ignore padding in context for loss purposes
-        self.mask_placeholder = tf.placeholder(tf.float32, (None, self.max_c_len))
+        self.mask_placeholder = tf.placeholder(tf.bool, (None, self.max_c_len))
 
-        # Proportion of connections to drop
-        self.dropout_placeholder = tf.placeholder(tf.float32, ())
+        self.dropout_placeholder = tf.placeholder(tf.float32, ())  # Proportion of connections to drop
+        self.learn_r_placeholder = tf.placeholder_with_default(FLAGS.learning_rate, tf.float32, ())
 
         with tf.variable_scope("qa", initializer=tf.uniform_unit_scaling_initializer(1.0)):
             embeds = self.setup_embeddings()
-            self.results = self.setup_system(embeds)
-            self.loss = self.setup_loss(self.results)
+            decode_res = self.setup_system(embeds)
+            final_res = tf.stack(decode_res, axis=2)
+            self.loss = self.setup_loss(final_res)
 
-        self.train_op = tf.train.AdamOptimizer(FLAGS.learning_rate).minimize(self.loss)
+            # build the results
+            self.results = tf.argmax(final_res, axis=1)
+
+        self.train_op = tf.train.AdamOptimizer().minimize(self.loss)
 
 
     def setup_embeddings(self):
@@ -440,6 +444,19 @@ class QASepSystem(qa_model.QASystem):
             inner = tf.matmul(inputs, w) + b
         return inner
 
+    def setup_loss(self, final_res):
+        """
+        final_res: originally B x context_len x 2 tensor
+        """
+        with vs.variable_scope("loss"):
+            # I need the 2 to be the middle axis
+            losses = tf.nn.sparse_softmax_cross_entropy_with_logits(final_res,
+                                                                    self.labels_placeholder)
+            tf.boolean_mask(losses, self.mask_placeholder)
+            loss = tf.reduce_mean(losses)
+
+        return loss
+
     def process_dataset(self, dataset, max_q_length=None, max_c_length=None):
         self.train_contexts = all_cs = dataset['contexts']
         self.train_questions = all_qs = dataset['questions']
@@ -450,7 +467,7 @@ class QASepSystem(qa_model.QASystem):
         self.max_c_len = max_c_length or max(all_cs, key=len)
 
         # build the padded questions, contexts, spans, lengths
-        pad_qs, pad_cs, pad_spans, seq_lens = (list() for i in range(4))
+        pad_qs, pad_cs, spans, seq_lens = (list() for i in range(4))
 
         for q, c, span in zip(all_qs, all_cs, all_spans):
             if len(q) > max_q_length:
@@ -460,7 +477,8 @@ class QASepSystem(qa_model.QASystem):
             pad_qs.append(self.pad_ele(q, self.max_q_len))
             pad_cs.append(self.pad_ele(c, self.max_c_len))
             start, end = span
-            pad_spans.append(self.selector_sequence(start, end, self.max_c_len))
+            spans.append(span)
+            spans.append()
             seq_lens.append((len(q), len(c)))
 
         # now we sort the whole thing
@@ -501,7 +519,7 @@ class QASepSystem(qa_model.QASystem):
     def prepare_data(self, data, dropout=0):
         q_batch, ctx_batch, labels_batch, context_spans_batch = data
         q_lens, c_lens = zip(*context_spans_batch)
-        masks = [self.selector_sequence(0, c - 1, self.max_c_len)  for c in c_lens]
+        masks = [self.selector_sequence(0, c - 1, self.max_c_len) for c in c_lens]
 
         feed_dict = {self.q_placeholder: q_batch,
                      self.ctx_placeholder: ctx_batch,
@@ -514,7 +532,7 @@ class QASepSystem(qa_model.QASystem):
 
     def evaluate_answer(self, session, sample=500, log=True):
         eval_set = list(random.sample(self.dev_qas, sample))
-        q_vec, ctx_vec, gold_spans, masks = zip(*eval_set)
+        q_vec, ctx_vec, gold_probs, masks = zip(*eval_set)
 
         if self.extra_log_process:
             self.extra_log_process.join()  # make sure it has finished by now
@@ -524,7 +542,8 @@ class QASepSystem(qa_model.QASystem):
             feed_dict = self.prepare_data(zip(*batch))
             pred_probs.extend(session.run([self.results], feed_dict=feed_dict)[0])
 
-        pred_spans = [[int(m > 0.5) for m in n] for n in pred_probs]
+        gold_spans = [self.selector_sequence(start, end, self.max_c_len) for start, end in gold_probs]
+        pred_spans = [self.selector_sequence(start, end, self.max_c_len) for start, end in pred_probs]
 
         f1s, ems, pred_s, gold_s = zip(*(self.eval_sentence(p, g, s)
                          for p, g, s in zip(pred_spans, gold_spans, ctx_vec)))

@@ -14,15 +14,17 @@ from os.path import join as pjoin
 import logging
 from datetime import datetime
 
-logging.basicConfig(level=logging.INFO)
+import socket
+is_azure = (socket.gethostname() == "cs224n-gpu")
 
+logging.basicConfig(level=logging.INFO)
 
 tf.app.flags.DEFINE_float("coattention", 1, "Proportionality multiplier for false negative penalty")
 tf.app.flags.DEFINE_float("recall_multiplier", 200, "Proportionality multiplier for false negative penalty")
 tf.app.flags.DEFINE_float("learning_rate", 0.01, "Learning rate.")
 tf.app.flags.DEFINE_float("max_gradient_norm", 10.0, "Clip gradients to this norm.")
 tf.app.flags.DEFINE_float("dropout", 0.15, "Fraction of units randomly dropped on non-recurrent connections.")
-tf.app.flags.DEFINE_integer("batch_size", 10, "Batch size to use during training.")
+tf.app.flags.DEFINE_integer("batch_size", 512 if is_azure else 10, "Batch size to use during training.")
 tf.app.flags.DEFINE_integer("epochs", 100, "Number of epochs to train.")
 tf.app.flags.DEFINE_integer("state_size", 200, "Size of each model layer.")
 tf.app.flags.DEFINE_integer("output_size", 750, "The output size of your model.")
@@ -37,6 +39,7 @@ tf.app.flags.DEFINE_integer("keep", 0, "How many checkpoints to keep, 0 indicate
 tf.app.flags.DEFINE_string("vocab_path", "data/squad/vocab.dat", "Path to vocab file (default: ./data/squad/vocab.dat)")
 tf.app.flags.DEFINE_string("embed_path", "", "Path to the trimmed GLoVe embedding (default: ./data/squad/glove.trimmed.{embedding_size}.npz)")
 tf.app.flags.DEFINE_string("output_path", "results/{:%Y%m%d_%H%M%S}/".format(datetime.now()), "output locations")
+tf.app.flags.DEFINE_string("prod", is_azure, "Adjust batch size and num of epochs for non prod for debugging")
 
 tf.app.flags.DEFINE_string("max_context_length", 300, "Length of longest context we'll use")
 tf.app.flags.DEFINE_string("max_question_length", 30, "Length of longest context we'll use")
