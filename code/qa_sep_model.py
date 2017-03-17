@@ -233,6 +233,7 @@ class AttentionBiDecoder(object):
         word_res = word_res * masks
         return word_res
 
+
 #Take in the output of the BiEncoder and turn it into a vector of probabilities
 class NaiveBiDecoder(object):
     def __init__(self, output_size, hidden_size):
@@ -277,6 +278,50 @@ class NaiveBiDecoder(object):
         return word_res
 
 
+
+class NaiveCoDecoder(object):
+    def __init__(self, hidden_size):
+        self.hidden_size = hidden_size
+
+    # Inputs of shape (Batch size) x (Context length) x (2*hidden_size)
+    def decode(self, inputs, lengths, c_len):
+
+        cell = tf.nn.rnn_cell.LSTMCell(self.hidden_size, use_peepholes=False)
+        xav_init = tf.contrib.layers.xavier_initializer()
+
+        #Decoder for start positions
+        with vs.variable_scope("start_decoder"):
+            s_h, _ = tf.nn.dynamic_rnn(
+                cell=cell, inputs=inputs,
+                sequence_length=lengths, dtype=tf.float32,
+                swap_memory=True)
+
+            w_s = tf.get_variable("W_s", (2*self.hidden_size, 1), tf.float32, xav_init)
+            b_s = tf.get_variable("b_s", (1,), tf.float32, tf.constant_initializer(0.0))
+            s_h = tf.reshape(s_h, [-1, 2*self.hidden_size])
+            inner = tf.matmul(s_h, w_s) + b_s
+            inner = tf.reshape(inner, [-1, c_len, 1])
+            start_probs = tf.nn.softmax(inner)
+
+        #Decoder for start positions
+        with vs.variable_scope("end_decoder"):
+            e_h, _ = tf.nn.dynamic_rnn(
+                cell=cell, inputs=inputs,
+                sequence_length=lengths, dtype=tf.float32,
+                swap_memory=True)
+
+            w_e = tf.get_variable("W_e", (2*self.hidden_size, 1), tf.float32, xav_init)
+            b_e = tf.get_variable("b_e", (1,), tf.float32, tf.constant_initializer(0.0))
+            e_h = tf.reshape(e_h, [-1, 2*self.hidden_size])
+            inner = tf.matmul(e_h, w_e) + b_e
+            inner = tf.reshape(inner, [-1, c_len, 1])
+            end_probs = tf.nn.softmax(inner)
+
+
+        #return tf.concat(2, [start_probs, end_probs])
+        return start_probs, end_probs
+
+
 class QASepSystem(qa_model.QASystem):
     def __init__(self, input_size, hidden_size, *args):
         self.in_size = input_size
@@ -288,15 +333,20 @@ class QASepSystem(qa_model.QASystem):
     def build_pipeline(self):
         # ==== set up placeholder tokens ========
 
-        if not FLAGS.coattention:
-            # Question and context sequences
-            self.encoder = BiEncoder(self.hidden_size, self.in_size)
-            #self.decoder = NaiveBiDecoder(self.max_c_len, self.hidden_size)
-            self.decoder = AttentionBiDecoder(self.max_c_len, self.hidden_size)
-        elif FLAGS.coattention:
-            self.encoder = CoEncoder(self.hidden_size, self.in_size,
-                                           self.max_c_len, self.max_q_len)
-            #self.decoder = CoDecoder(self.max_c_len, self.hidden_size)
+        #if not FLAGS.coattention:
+        #    # Question and context sequences
+        #    self.encoder = BiEncoder(self.hidden_size, self.in_size)
+        #    #self.decoder = NaiveBiDecoder(self.max_c_len, self.hidden_size)
+        #    self.decoder = AttentionBiDecoder(self.max_c_len, self.hidden_size)
+        #elif FLAGS.coattention:
+        #    self.encoder = CoEncoder(self.hidden_size, self.in_size,
+        #                                   self.max_c_len, self.max_q_len)
+        #    #self.decoder = CoDecoder(self.max_c_len, self.hidden_size)
+
+        self.encoder = CoEncoder(self.hidden_size, self.in_size,
+                                       self.max_c_len, self.max_q_len)
+        self.decoder = NaiveCoDecoder(self.hidden_size)
+
 
         self.q_placeholder = tf.placeholder(tf.int32, (None, self.max_q_len))
         self.ctx_placeholder = tf.placeholder(tf.int32, (None, self.max_c_len))
@@ -335,22 +385,25 @@ class QASepSystem(qa_model.QASystem):
         return {"q": q_embed, "ctx": ctx_embed}
 
     def setup_system(self, embeds):
-        if not FLAGS.coattention:
-            # def encode(self, qs, q_lens, cs, c_lens, dropout):
-            hidden_rep = self.encoder.encode(embeds["q"], self.q_len_pholder, embeds["ctx"],
-                                             self.c_len_pholder, self.dropout_placeholder)
-            q_out, q_state, c_out, c_states = hidden_rep
-            # res = self.decoder.decode(q_state, c_out, self.c_len_pholder, self.mask_placeholder,
-            #                          self.dropout_placeholder)
-            res = self.decoder.decode(q_state, q_out, c_out, self.c_len_pholder, self.mask_placeholder,
-                                      self.dropout_placeholder)
+        ##if not FLAGS.coattention:
+        #    # def encode(self, qs, q_lens, cs, c_lens, dropout):
+        #    hidden_rep = self.encoder.encode(embeds["q"], self.q_len_pholder, embeds["ctx"],
+        #                                     self.c_len_pholder, self.dropout_placeholder)
+        #    q_out, q_state, c_out, c_states = hidden_rep
+        #    # res = self.decoder.decode(q_state, c_out, self.c_len_pholder, self.mask_placeholder,
+        #    #                          self.dropout_placeholder)
+        #    res = self.decoder.decode(q_state, q_out, c_out, self.c_len_pholder, self.mask_placeholder,
+        #                              self.dropout_placeholder)
+        #elif FLAGS.coattention:
+        #    encoding = self.encoder.encode(embeds["q"], self.q_len_pholder, embeds["ctx"],
+        #                                     self.c_len_pholder, self.dropout_placeholder)
+        #    #TODO: chop off last index along 1st axis of encoding?
+        #    res = self.decode_arbitration_layer(encoding, self.mask_placeholder)
 
-        elif FLAGS.coattention:
-            encoding = self.encoder.encode(embeds["q"], self.q_len_pholder, embeds["ctx"],
-                                             self.c_len_pholder, self.dropout_placeholder)
 
-            #TODO: chop off last index along 1st axis of encoding?
-            res = self.decode_arbitration_layer(encoding, self.mask_placeholder)
+        encoding = self.encoder.encode(embeds["q"], self.q_len_pholder, embeds["ctx"],
+                                             self.c_len_pholder, self.dropout_placeholder)
+        res = self.decoder.decode(encoding, self.c_len_pholder, self.max_c_len)
 
         return res
 
