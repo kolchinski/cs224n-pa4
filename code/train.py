@@ -38,7 +38,8 @@ tf.app.flags.DEFINE_string("vocab_path", "data/squad/vocab.dat", "Path to vocab 
 tf.app.flags.DEFINE_string("embed_path", "", "Path to the trimmed GLoVe embedding (default: ./data/squad/glove.trimmed.{embedding_size}.npz)")
 tf.app.flags.DEFINE_string("output_path", "results/{:%Y%m%d_%H%M%S}/".format(datetime.now()), "output locations")
 
-tf.app.flags.DEFINE_string("max_length", 250, "Length of longest context we'll use")
+tf.app.flags.DEFINE_string("max_context_length", 300, "Length of longest context we'll use")
+tf.app.flags.DEFINE_string("max_question_length", 30, "Length of longest context we'll use")
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -110,7 +111,8 @@ def main(_):
     qa = QASepSystem(FLAGS.embedding_size, FLAGS.state_size)
 
     dataset = load_dataset(FLAGS.data_dir)
-    qa.process_dataset(dataset, max_c_length=300, max_q_length=30)
+    qa.process_dataset(dataset, max_c_length=FLAGS.max_context_length,
+                       max_q_length=FLAGS.max_question_length)
     qa.build_pipeline()
 
     file_handler = logging.FileHandler(pjoin(FLAGS.log_dir, "log.txt"))
