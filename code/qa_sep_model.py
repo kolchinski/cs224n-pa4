@@ -357,19 +357,19 @@ class QASepSystem(qa_model.QASystem):
         self.c_len_pholder = tf.placeholder(tf.int32, (None,))
 
         # True 1/0 labelings of words in the context
-        self.labels_placeholder = tf.placeholder(tf.float32, (None, 2))
+        self.labels_placeholder = tf.placeholder(tf.int32, (None, 2))
 
         # 1/0 mask to ignore padding in context for loss purposes
         self.mask_placeholder = tf.placeholder(tf.bool, (None, self.max_c_len))
 
         self.dropout_placeholder = tf.placeholder(tf.float32, ())  # Proportion of connections to drop
-        self.learn_r_placeholder = tf.placeholder_with_default(FLAGS.learning_rate, tf.float32, ())
+        self.learn_r_placeholder = tf.placeholder_with_default(FLAGS.learning_rate, ())
 
         with tf.variable_scope("qa", initializer=tf.uniform_unit_scaling_initializer(1.0)):
             embeds = self.setup_embeddings()
             decode_res = self.setup_system(embeds)
             final_res = tf.stack(decode_res, axis=2)
-            self.loss = self.setup_loss(final_res)
+            self.loss = self.setup_loss(decode_res)
 
             # build the results
             self.results = tf.argmax(final_res, axis=1)
@@ -451,11 +451,14 @@ class QASepSystem(qa_model.QASystem):
         final_res: originally B x context_len x 2 tensor
         """
         with vs.variable_scope("loss"):
-            # I need the 2 to be the middle axis
-            losses = tf.nn.sparse_softmax_cross_entropy_with_logits(final_res,
-                                                                    self.labels_placeholder)
-            tf.boolean_mask(losses, self.mask_placeholder)
-            loss = tf.reduce_mean(losses)
+            ce_wl = tf.nn.sparse_softmax_cross_entropy_with_logits
+            start_labels, end_labels = tf.unpack(self.labels_placeholder, axis=1)
+            start_losses = ce_wl(final_res[0], start_labels)
+            end_losses = ce_wl(final_res[1], end_labels)
+
+            # TODO: figure out how to do masking properly
+            # tf.boolean_mask(losses, self.mask_placeholder)
+            loss = tf.reduce_mean(start_losses + end_losses)
 
         return loss
 
@@ -478,13 +481,11 @@ class QASepSystem(qa_model.QASystem):
                 continue
             pad_qs.append(self.pad_ele(q, self.max_q_len))
             pad_cs.append(self.pad_ele(c, self.max_c_len))
-            start, end = span
             spans.append(span)
-            spans.append()
             seq_lens.append((len(q), len(c)))
 
         # now we sort the whole thing
-        all_qs = list(zip(pad_qs, pad_cs, pad_spans, seq_lens))
+        all_qs = list(zip(pad_qs, pad_cs, spans, seq_lens))
         train_size = int(len(all_qs) * .8)
         self.train_qas = all_qs[:train_size]
         self.dev_qas = all_qs[train_size:]
