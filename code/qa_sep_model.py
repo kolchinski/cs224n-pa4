@@ -115,15 +115,10 @@ class NaiveCoDecoder(object):
         cell = tf.nn.rnn_cell.DropoutWrapper(cell, output_keep_prob = 1.0 - dropout)
         xav_init = tf.contrib.layers.xavier_initializer()
 
-        with vs.variable_scope("pre_decoder"):
-            inputs, _ = tf.nn.dynamic_rnn(
-                cell=cell, inputs=inputs,
-                sequence_length=lengths, dtype=tf.float32,
-                swap_memory=True)
 
         #Decoder for start positions
         with vs.variable_scope("start_decoder"):
-            s_h, _ = tf.nn.dynamic_rnn(
+            s_h, s_h_state = tf.nn.dynamic_rnn(
                 cell=cell, inputs=inputs,
                 sequence_length=lengths, dtype=tf.float32,
                 swap_memory=True)
@@ -141,7 +136,7 @@ class NaiveCoDecoder(object):
             e_h, _ = tf.nn.dynamic_rnn(
                 cell=cell, inputs=inputs,
                 sequence_length=lengths, dtype=tf.float32,
-                swap_memory=True)
+                swap_memory=True, initial_state=s_h_state)
 
             w_e = tf.get_variable("W_e", (self.hidden_size, 1), tf.float32, xav_init)
             b_e = tf.get_variable("b_e", (1,), tf.float32, tf.constant_initializer(0.0))
