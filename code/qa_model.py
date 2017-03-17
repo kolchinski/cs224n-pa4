@@ -72,10 +72,11 @@ class QASystem(object):
         return l
 
     def run_epoch(self, sess, train):
-        prog = Progbar(target=1 + int(len(train) / FLAGS.batch_size))
+        batches = self.build_batches(self.train_qas)
+        if not FLAGS.is_azure: batches = batches[:5]
+        prog = Progbar(target=len(batches))
         losses = []
-        for i, batch in enumerate(self.build_batches(self.train_qas)):
-            #ques_con_seq, labels = zip(*b)
+        for i, batch in enumerate(batches):
             loss = self.train_on_batch(sess, zip(*batch))
             losses.append(loss)
             prog.update(i + 1, [("train loss", loss)])

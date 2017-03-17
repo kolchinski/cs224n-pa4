@@ -357,7 +357,10 @@ class QASepSystem(qa_model.QASystem):
                      self.mask_placeholder: masks}
         return feed_dict
 
-    def evaluate_answer(self, session, sample=2000, log=True):
+    def evaluate_answer(self, session, sample=None, log=True):
+        if sample is None:
+            sample = 2000 if FLAGS.is_azure else 50
+
         eval_set = list(random.sample(self.dev_qas, sample))
         q_vec, ctx_vec, gold_probs, masks = zip(*eval_set)
 
