@@ -301,7 +301,8 @@ class NaiveCoDecoder(object):
             s_h = tf.reshape(s_h, [-1, 2*self.hidden_size])
             inner = tf.matmul(s_h, w_s) + b_s
             inner = tf.reshape(inner, [-1, c_len])
-            start_probs = tf.nn.softmax(inner)
+            #start_probs = tf.nn.softmax(inner)
+            start_probs = inner
 
         #Decoder for start positions
         with vs.variable_scope("end_decoder"):
@@ -315,7 +316,8 @@ class NaiveCoDecoder(object):
             e_h = tf.reshape(e_h, [-1, 2*self.hidden_size])
             inner = tf.matmul(e_h, w_e) + b_e
             inner = tf.reshape(inner, [-1, c_len])
-            end_probs = tf.nn.softmax(inner)
+            #end_probs = tf.nn.softmax(inner)
+            end_probs = inner
 
 
         #return tf.concat(2, [start_probs, end_probs])
