@@ -73,7 +73,7 @@ class QASystem(object):
 
     def run_epoch(self, sess, train):
         batches = self.build_batches(self.train_qas)
-        if not FLAGS.is_azure: batches = batches[:5]
+        if not FLAGS.is_prod: batches = batches[:5]
         prog = Progbar(target=len(batches))
         losses = []
         for i, batch in enumerate(batches):

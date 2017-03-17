@@ -39,7 +39,7 @@ tf.app.flags.DEFINE_integer("keep", 0, "How many checkpoints to keep, 0 indicate
 tf.app.flags.DEFINE_string("vocab_path", "data/squad/vocab.dat", "Path to vocab file (default: ./data/squad/vocab.dat)")
 tf.app.flags.DEFINE_string("embed_path", "", "Path to the trimmed GLoVe embedding (default: ./data/squad/glove.trimmed.{embedding_size}.npz)")
 tf.app.flags.DEFINE_string("output_path", "results/{:%Y%m%d_%H%M%S}/".format(datetime.now()), "output locations")
-tf.app.flags.DEFINE_string("prod", is_azure, "Adjust batch size and num of epochs for non prod for debugging")
+tf.app.flags.DEFINE_string("is_prod", is_azure, "Adjust batch size and num of epochs for non prod for debugging")
 
 tf.app.flags.DEFINE_string("max_context_length", 300, "Length of longest context we'll use")
 tf.app.flags.DEFINE_string("max_question_length", 30, "Length of longest context we'll use")
@@ -127,6 +127,7 @@ def main(_):
 
     with tf.Session() as sess:
         load_train_dir = get_normalized_train_dir(FLAGS.load_train_dir or FLAGS.train_dir)
+        if not FLAGS.is_prod: print("Runnign small sample for local debugging")
         print("Initializing model")
         initialize_model(sess, qa, load_train_dir)
 
