@@ -144,7 +144,7 @@ class NaiveCoDecoder(object):
             e_h = tf.reshape(e_h, [-1, self.hidden_size])
             inner = tf.matmul(e_h, w_e) + b_e
             inner = tf.reshape(inner, [-1, c_len])
-            _end_probs = inner
+            end_probs = inner
 
         """
         with vs.variable_scope("final_decoder_net"):
