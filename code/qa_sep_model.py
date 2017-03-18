@@ -146,23 +146,23 @@ class NaiveCoDecoder(object):
             inner = tf.reshape(inner, [-1, c_len])
             self.nai_end_probs = inner
 
-        with vs.variable_scope("final_decoder"):
-            both_h = tf.concat(2, [s_h, e_h])
-            both_h2, _ = tf.nn.dynamic_rnn(
-                cell=cell, inputs=both_h,
-                sequence_length=lengths, dtype=tf.float32,
-                swap_memory=True)
-            both_h2 = tf.reshape(both_h2, [-1, self.hidden_size])
 
-            w_s = tf.get_variable("W_s", (self.hidden_size, 1), tf.float32, xav_init)
-            b_s = tf.get_variable("b_s", (1,), tf.float32, tf.constant_initializer(0.0))
-            inner = tf.matmul(both_h2, w_s) + b_s
-            start_probs = tf.reshape(inner, [-1, c_len])
+        with vs.variable_scope("final_decoder_net"):
+            z = tf.concat(1, [self.nai_start_probs, self.nai_end_probs])
 
-            w_e = tf.get_variable("W_e", (self.hidden_size, 1), tf.float32, xav_init)
-            b_e = tf.get_variable("b_e", (1,), tf.float32, tf.constant_initializer(0.0))
-            inner = tf.matmul(both_h2, w_e) + b_e
-            end_probs = tf.reshape(inner, [-1, c_len])
+            wfs = tf.get_variable("W_f_s", [2*c_len, 2*c_len], tf.float32, xav_init)
+            bfs = tf.get_variable("B_f_s", [2*c_len], tf.float32, tf.constant_initializer(0.0))
+            z2 = tf.nn.relu(tf.matmul(z, wfs) + bfs)
+
+            wfs2 = tf.get_variable("W_f_s2", [2*c_len, c_len], tf.float32, xav_init)
+            bfs2 = tf.get_variable("B_f_s2", [c_len], tf.float32, tf.constant_initializer(0.0))
+            #start_probs = tf.nn.relu(tf.matmul(z2, wfs2) + bfs2)
+            start_probs = tf.matmul(z2, wfs2) + bfs2
+
+            wfe2 = tf.get_variable("W_f_e2", [2*c_len, c_len], tf.float32, xav_init)
+            bfe2 = tf.get_variable("B_f_e2", [c_len], tf.float32, tf.constant_initializer(0.0))
+            #end_probs = tf.nn.relu(tf.matmul(z2, wfe2) + bfe2)
+            end_probs = tf.matmul(z2, wfe2) + bfe2
 
         return start_probs, end_probs
 
@@ -242,8 +242,8 @@ class QASepSystem(qa_model.QASystem):
             start_losses = ce_wl(final_res[0], start_labels)
             end_losses = ce_wl(final_res[1], end_labels)
 
-            nai_start_losses = ce_wl(final_res[0], self.decoder.nai_start_probs)
-            nai_end_losses = ce_wl(final_res[1], self.decoder.nai_end_probs)
+            nai_start_losses = ce_wl(self.decoder.nai_start_probs, start_labels)
+            nai_end_losses = ce_wl(self.decoder.nai_end_probs, end_labels)
 
             # TODO: figure out how to do masking properly
             # tf.boolean_mask(losses, self.mask_placeholder)
