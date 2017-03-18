@@ -131,7 +131,7 @@ class NaiveCoDecoder(object):
             #start_probs = tf.nn.softmax(inner)
             start_probs = inner
 
-        #Decoder for start positions
+        #Decoder for end positions
         with vs.variable_scope("end_decoder"):
             e_h, _ = tf.nn.dynamic_rnn(
                 cell=cell, inputs=tf.concat(2,[inputs,s_h]),
