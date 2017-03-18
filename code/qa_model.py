@@ -216,10 +216,9 @@ class QASystem(object):
         logging.info("Number of params: %d (retrieval took %f secs)" % (num_params, toc - tic))
 
         initializer = tf.global_variables_initializer()
-        saver = tf.train.Saver()
         session.run(initializer)
         print("Session initialized, starting training")
 
         print("Start train function")
-        losses = self.fit(session, saver, self.train_qas, best_t_dir)
+        losses = self.fit(session, self.saver, self.train_qas, best_t_dir)
 

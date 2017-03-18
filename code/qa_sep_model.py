@@ -208,6 +208,9 @@ class QASepSystem(qa_model.QASystem):
         self.train_op = tf.train.AdamOptimizer().minimize(self.loss)
 
 
+        # has to be after the whole pipeline is built
+        self.saver = tf.train.Saver()
+
     def setup_embeddings(self):
         embed_path = FLAGS.embed_path or os.path.join(
             "data", "squad", "glove.trimmed.{}.npz".format(FLAGS.embedding_size))

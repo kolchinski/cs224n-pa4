@@ -46,7 +46,7 @@ def initialize_model(session, model, train_dir, is_eval=False):
     v2_path = ckpt.model_checkpoint_path + ".index" if ckpt else ""
     if ckpt and (tf.gfile.Exists(ckpt.model_checkpoint_path) or tf.gfile.Exists(v2_path)):
         logging.info("Reading model parameters from %s" % ckpt.model_checkpoint_path)
-        model.saver.restore(session, ckpt.model_checkpoint_path)
+        # model.saver.restore(session, ckpt.model_checkpoint_path)
     else:
         if is_eval:
             raise Exception("Couldn't find model parameters for eval. ckpt: {}")
