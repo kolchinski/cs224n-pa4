@@ -123,6 +123,7 @@ class NaiveCoDecoder(object):
                 sequence_length=lengths, dtype=tf.float32,
                 swap_memory=True)
 
+            s_h_out = s_h
             w_s = tf.get_variable("W_s", (self.hidden_size, 1), tf.float32, xav_init)
             b_s = tf.get_variable("b_s", (1,), tf.float32, tf.constant_initializer(0.0))
             s_h = tf.reshape(s_h, [-1, self.hidden_size])
@@ -134,7 +135,7 @@ class NaiveCoDecoder(object):
         #Decoder for start positions
         with vs.variable_scope("end_decoder"):
             e_h, _ = tf.nn.dynamic_rnn(
-                cell=cell, inputs=inputs,
+                cell=cell, inputs=tf.concat(2,[inputs,s_h_out]),
                 sequence_length=lengths, dtype=tf.float32,
                 swap_memory=True, initial_state=s_h_state)
 
