@@ -18,33 +18,34 @@ import socket
 is_azure = (socket.gethostname() == "cs224n-gpu")
 
 logging.basicConfig(level=logging.INFO)
+def setup_flags():
+    tf.app.flags.DEFINE_float("coattention", 1, "Proportionality multiplier for false negative penalty")
+    tf.app.flags.DEFINE_float("recall_multiplier", 200, "Proportionality multiplier for false negative penalty")
+    tf.app.flags.DEFINE_float("learning_rate", 0.001, "Learning rate.")
+    tf.app.flags.DEFINE_float("max_gradient_norm", 10.0, "Clip gradients to this norm.")
+    tf.app.flags.DEFINE_float("dropout", 0.15, "Fraction of units randomly dropped on non-recurrent connections.")
+    tf.app.flags.DEFINE_integer("batch_size", 512 if is_azure else 10, "Batch size to use during training.")
+    tf.app.flags.DEFINE_integer("epochs", 350, "Number of epochs to train.")
+    tf.app.flags.DEFINE_integer("state_size", 200, "Size of each model layer.")
+    tf.app.flags.DEFINE_integer("output_size", 750, "The output size of your model.")
+    tf.app.flags.DEFINE_integer("embedding_size", 100, "Size of the pretrained vocabulary.")
+    tf.app.flags.DEFINE_string("data_dir", "data/squad", "SQuAD directory (default ./data/squad)")
+    tf.app.flags.DEFINE_string("train_dir", "train", "Training directory to save the model parameters (default: ./train).")
+    tf.app.flags.DEFINE_string("load_train_dir", "", "Training directory to load model parameters from to resume training (default: {train_dir}).")
+    tf.app.flags.DEFINE_string("log_dir", "log", "Path to store log and flag files (default: ./log)")
+    tf.app.flags.DEFINE_string("optimizer", "adam", "adam / sgd")
+    tf.app.flags.DEFINE_integer("print_every", 1, "How many iterations to do per print.")
+    tf.app.flags.DEFINE_integer("keep", 0, "How many checkpoints to keep, 0 indicates keep all.")
+    tf.app.flags.DEFINE_string("vocab_path", "data/squad/vocab.dat", "Path to vocab file (default: ./data/squad/vocab.dat)")
+    tf.app.flags.DEFINE_string("embed_path", "", "Path to the trimmed GLoVe embedding (default: ./data/squad/glove.trimmed.{embedding_size}.npz)")
+    tf.app.flags.DEFINE_string("output_path", "results/{:%Y%m%d_%H%M%S}/".format(datetime.now()), "output locations")
+    tf.app.flags.DEFINE_string("is_prod", is_azure, "Adjust batch size and num of epochs for non prod for debugging")
 
-tf.app.flags.DEFINE_float("coattention", 1, "Proportionality multiplier for false negative penalty")
-tf.app.flags.DEFINE_float("recall_multiplier", 200, "Proportionality multiplier for false negative penalty")
-tf.app.flags.DEFINE_float("learning_rate", 0.001, "Learning rate.")
-tf.app.flags.DEFINE_float("max_gradient_norm", 10.0, "Clip gradients to this norm.")
-tf.app.flags.DEFINE_float("dropout", 0.15, "Fraction of units randomly dropped on non-recurrent connections.")
-tf.app.flags.DEFINE_integer("batch_size", 512 if is_azure else 10, "Batch size to use during training.")
-tf.app.flags.DEFINE_integer("epochs", 350, "Number of epochs to train.")
-tf.app.flags.DEFINE_integer("state_size", 200, "Size of each model layer.")
-tf.app.flags.DEFINE_integer("output_size", 750, "The output size of your model.")
-tf.app.flags.DEFINE_integer("embedding_size", 100, "Size of the pretrained vocabulary.")
-tf.app.flags.DEFINE_string("data_dir", "data/squad", "SQuAD directory (default ./data/squad)")
-tf.app.flags.DEFINE_string("train_dir", "train", "Training directory to save the model parameters (default: ./train).")
-tf.app.flags.DEFINE_string("load_train_dir", "", "Training directory to load model parameters from to resume training (default: {train_dir}).")
-tf.app.flags.DEFINE_string("log_dir", "log", "Path to store log and flag files (default: ./log)")
-tf.app.flags.DEFINE_string("optimizer", "adam", "adam / sgd")
-tf.app.flags.DEFINE_integer("print_every", 1, "How many iterations to do per print.")
-tf.app.flags.DEFINE_integer("keep", 0, "How many checkpoints to keep, 0 indicates keep all.")
-tf.app.flags.DEFINE_string("vocab_path", "data/squad/vocab.dat", "Path to vocab file (default: ./data/squad/vocab.dat)")
-tf.app.flags.DEFINE_string("embed_path", "", "Path to the trimmed GLoVe embedding (default: ./data/squad/glove.trimmed.{embedding_size}.npz)")
-tf.app.flags.DEFINE_string("output_path", "results/{:%Y%m%d_%H%M%S}/".format(datetime.now()), "output locations")
-tf.app.flags.DEFINE_string("is_prod", is_azure, "Adjust batch size and num of epochs for non prod for debugging")
+    tf.app.flags.DEFINE_string("max_context_length", 300, "Length of longest context we'll use")
+    tf.app.flags.DEFINE_string("max_question_length", 30, "Length of longest context we'll use")
 
-tf.app.flags.DEFINE_string("max_context_length", 300, "Length of longest context we'll use")
-tf.app.flags.DEFINE_string("max_question_length", 30, "Length of longest context we'll use")
-
-FLAGS = tf.app.flags.FLAGS
+    global FLAGS
+    FLAGS = tf.app.flags.FLAGS
 
 
 def initialize_model(session, model, train_dir):
@@ -99,6 +100,7 @@ def load_data_file(data_dir, name):
 def main(_):
     #embed_path = FLAGS.embed_path or pjoin("data", "squad", "glove.trimmed.{}.npz".format(FLAGS.embedding_size))
     print(tf.__version__)
+    setup_flags()
 
     if not is_azure: os.chdir('..')
     # we never use this

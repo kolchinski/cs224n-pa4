@@ -277,6 +277,32 @@ class QASepSystem(qa_model.QASystem):
         self.train_qas.sort(key=sort_alg)
         self.dev_qas.sort(key=sort_alg)
 
+    def process_eval_dataset(self, dataset, max_q_length=None, max_c_length=None):
+        self.train_contexts = all_cs = dataset['contexts']
+        self.train_questions = all_qs = dataset['questions']
+        self.vocab = dataset['vocab']
+        self.uuids = dataset["q_uuids"]
+
+        self.max_q_len = max_q_length or max(all_qs, key=len)
+        self.max_c_len = max_c_length or max(all_cs, key=len)
+
+        # build the padded questions, contexts, spans, lengths
+        pad_qs, pad_cs, seq_lens, uuids = (list() for i in range(4))
+
+        for q, c, uuid in zip(all_qs, all_cs, self.uuids):
+            if len(q) > max_q_length:
+               q = q[:max_q_length]   # for eval set, we will truncate to increase perf
+            if len(c) > max_c_length:
+               c = c[:max_c_length]
+            pad_qs.append(self.pad_ele(q, self.max_q_len))
+            pad_cs.append(self.pad_ele(c, self.max_c_len))
+            uuids.append(uuid)
+            seq_lens.append((len(q), len(c)))
+
+        # now we sort the whole thing
+        all_qs = list(zip(pad_qs, pad_cs, uuids, seq_lens))
+        return all_qs   # don't want to reorder the questions
+
     @staticmethod
     def pad_vocab_ids(seqs, max_len=None):
         if max_len is None:
@@ -358,6 +384,32 @@ class QASepSystem(qa_model.QASystem):
             """""
 
         return f1, em
+
+    def gen_test_answers(self, session, dataset, vocab):
+        q_vec, ctx_vec, uuids, seq_lens = zip(*dataset)
+
+        pred_probs = []
+        for batch in self.build_batches(dataset, shuffle=False):
+            feed_dict = self.prepare_eval_data(zip(*batch))
+            pred_probs.extend(session.run([self.results], feed_dict=feed_dict)[0])
+
+        pred_vecs = [sent[start:end +1] for sent, (start, end) in zip(ctx_vec, pred_probs)]
+        pred_sents = [' '.join(vocab[i] for i in pred_vecs) for vec in pred_vecs]
+
+        return dict(zip(uuids, pred_sents))
+
+    def prepare_eval_data(self, data, dropout=0):
+        q_batch, ctx_batch, uuids, context_spans_batch = data
+        q_lens, c_lens = zip(*context_spans_batch)
+        masks = [self.selector_sequence(0, c - 1, self.max_c_len) for c in c_lens]
+
+        feed_dict = {self.q_placeholder: q_batch,
+                     self.ctx_placeholder: ctx_batch,
+                     self.q_len_pholder: q_lens,
+                     self.c_len_pholder: c_lens,
+                     self.dropout_placeholder: dropout,
+                     self.mask_placeholder: masks}
+        return feed_dict
 
     @staticmethod
     def extended_log(vocab, eval_res_file, q_vec, gold_s, pred_s, ems, f1s):

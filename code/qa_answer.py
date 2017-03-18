@@ -5,23 +5,23 @@ from __future__ import print_function
 import io
 import os
 import json
-import sys
-import random
 from os.path import join as pjoin
+import six
 
 from tqdm import tqdm
-import numpy as np
-from six.moves import xrange
 import tensorflow as tf
 
-from qa_model import Encoder, QASystem, Decoder
+from qa_sep_model import QASepSystem
 from preprocessing.squad_preprocess import data_from_json, maybe_download, squad_base_url, \
     invert_map, tokenize, token_idx_map
 import qa_data
 
 import logging
-
 logging.basicConfig(level=logging.INFO)
+
+import socket
+is_azure = (socket.gethostname() == "cs224n-gpu")
+
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -38,15 +38,18 @@ tf.app.flags.DEFINE_string("log_dir", "log", "Path to store log and flag files (
 tf.app.flags.DEFINE_string("vocab_path", "data/squad/vocab.dat", "Path to vocab file (default: ./data/squad/vocab.dat)")
 tf.app.flags.DEFINE_string("embed_path", "", "Path to the trimmed GLoVe embedding (default: ./data/squad/glove.trimmed.{embedding_size}.npz)")
 tf.app.flags.DEFINE_string("dev_path", "data/squad/dev-v1.1.json", "Path to the JSON dev set to evaluate against (default: ./data/squad/dev-v1.1.json)")
-tf.app.flags.DEFINE_string("output_path", "results/{:%Y%m%d_%H%M%S}/".format(datetime.now()))
+tf.app.flags.DEFINE_string("is_prod", is_azure, "Adjust batch size and num of epochs for non prod for debugging")
 
-def initialize_model(session, model, train_dir):
-    ckpt = tf.train.get_checkpoint_state(train_dir)
+
+def initialize_model(session, model, train_dir, is_eval=False):
+    ckpt = tf.train.get_checkpoint_state(train_dir + "/best")
     v2_path = ckpt.model_checkpoint_path + ".index" if ckpt else ""
     if ckpt and (tf.gfile.Exists(ckpt.model_checkpoint_path) or tf.gfile.Exists(v2_path)):
         logging.info("Reading model parameters from %s" % ckpt.model_checkpoint_path)
         model.saver.restore(session, ckpt.model_checkpoint_path)
     else:
+        if is_eval:
+            raise Exception("Couldn't find model parameters for eval. ckpt: {}")
         logging.info("Created model with fresh parameters.")
         session.run(tf.global_variables_initializer())
         logging.info('Num params: %d' % sum(v.get_shape().num_elements() for v in tf.trainable_variables()))
@@ -83,7 +86,7 @@ def read_dataset(dataset, tier, vocab):
             context = context.replace("''", '" ')
             context = context.replace("``", '" ')
 
-            context_tokens = tokenize(context)
+            context_tokens = list(tokenize(context))
 
             qas = article_paragraphs[pid]['qas']
             for qid in range(len(qas)):
@@ -91,11 +94,13 @@ def read_dataset(dataset, tier, vocab):
                 question_tokens = tokenize(question)
                 question_uuid = qas[qid]['id']
 
-                context_ids = [str(vocab.get(w, qa_data.UNK_ID)) for w in context_tokens]
-                qustion_ids = [str(vocab.get(w, qa_data.UNK_ID)) for w in question_tokens]
+                context_ids = [vocab.get(str(w), qa_data.UNK_ID) for w in context_tokens]
+                qustion_ids = [vocab.get(str(w), qa_data.UNK_ID) for w in question_tokens]
 
-                context_data.append(' '.join(context_ids))
-                query_data.append(' '.join(qustion_ids))
+                # context_data.append(' '.join(context_ids))
+                # query_data.append(' '.join(qustion_ids))
+                context_data.append(context_ids)
+                query_data.append(qustion_ids)
                 question_uuid_data.append(question_uuid)
 
     return context_data, query_data, question_uuid_data
@@ -130,9 +135,7 @@ def generate_answers(sess, model, dataset, rev_vocab):
     :param rev_vocab: this is a list of vocabulary that maps index to actual words
     :return:
     """
-    answers = {}
-
-    return answers
+    return model.gen_test_answers(sess, dataset, rev_vocab)
 
 
 def get_normalized_train_dir(train_dir):
@@ -147,7 +150,10 @@ def get_normalized_train_dir(train_dir):
         os.unlink(global_train_dir)
     if not os.path.exists(train_dir):
         os.makedirs(train_dir)
-    os.symlink(os.path.abspath(train_dir), global_train_dir)
+    try:  # to make it work on windows
+        os.symlink(os.path.abspath(train_dir), global_train_dir)
+    except Exception:
+        return train_dir
     return global_train_dir
 
 
@@ -172,24 +178,34 @@ def main(_):
     dev_dirname = os.path.dirname(os.path.abspath(FLAGS.dev_path))
     dev_filename = os.path.basename(FLAGS.dev_path)
     context_data, question_data, question_uuid_data = prepare_dev(dev_dirname, dev_filename, vocab)
-    dataset = (context_data, question_data, question_uuid_data)
+
+    dataset = {"contexts": context_data, "questions": question_data,
+               "q_uuids":question_uuid_data, "vocab": vocab}
+
+    # dataset = load_dataset(FLAGS.data_dir)
 
     # ========= Model-specific =========
     # You must change the following code to adjust to your model
 
-    encoder = Encoder(size=FLAGS.state_size, vocab_dim=FLAGS.embedding_size)
-    decoder = Decoder(output_size=FLAGS.output_size)
+    truncated = True
 
-    qa = QASystem(encoder, decoder)
+    qa = QASepSystem(FLAGS.embedding_size, FLAGS.state_size)
+
+    if truncated:
+        eval_ds = qa.process_eval_dataset(dataset, max_c_length=300, max_q_length=30)
+    else:
+        eval_ds = qa.process_eval_dataset(dataset)
+    qa.build_pipeline()
 
     with tf.Session() as sess:
         train_dir = get_normalized_train_dir(FLAGS.train_dir)
-        initialize_model(sess, qa, train_dir)
-        answers = generate_answers(sess, qa, dataset, rev_vocab)
+        if not is_azure: os.chdir("..")
+        initialize_model(sess, qa, train_dir, True)
+        answers = generate_answers(sess, qa, eval_ds, rev_vocab)
 
         # write to json file to root dir
         with io.open('dev-prediction.json', 'w', encoding='utf-8') as f:
-            f.write(unicode(json.dumps(answers, ensure_ascii=False)))
+            f.write(six.text_type(json.dumps(answers, ensure_ascii=False)))
 
 
 if __name__ == "__main__":
