@@ -123,11 +123,10 @@ class NaiveCoDecoder(object):
                 sequence_length=lengths, dtype=tf.float32,
                 swap_memory=True)
 
-            s_h_out = s_h
             w_s = tf.get_variable("W_s", (self.hidden_size, 1), tf.float32, xav_init)
             b_s = tf.get_variable("b_s", (1,), tf.float32, tf.constant_initializer(0.0))
-            s_h = tf.reshape(s_h, [-1, self.hidden_size])
-            inner = tf.matmul(s_h, w_s) + b_s
+            s_h_flat = tf.reshape(s_h, [-1, self.hidden_size])
+            inner = tf.matmul(s_h_flat, w_s) + b_s
             inner = tf.reshape(inner, [-1, c_len])
             #start_probs = tf.nn.softmax(inner)
             start_probs = inner
@@ -135,16 +134,40 @@ class NaiveCoDecoder(object):
         #Decoder for start positions
         with vs.variable_scope("end_decoder"):
             e_h, _ = tf.nn.dynamic_rnn(
-                cell=cell, inputs=inputs,
+                cell=cell, inputs=tf.concat(2,[inputs,s_h]),
                 sequence_length=lengths, dtype=tf.float32,
-                swap_memory=True)
+                swap_memory=True, initial_state=s_h_state)
+
+
+            # Global attention mechanism - let's get the end decoder to
+            # pay attention to the start endcoder's outputs
+            # see comments here for reference:
+            # https://github.com/kolchinski/cs224n-pa4/commit/81b3ce5db3d44532e2e7601b696ab6bbd6f27353
+
+            w_a = tf.get_variable("W_a", (self.hidden_size, self.hidden_size), tf.float32, xav_init)
+            m1 = tf.matmul(tf.reshape(s_h, [-1, self.hidden_size]), w_a)
+            m1 = tf.reshape(m1, [-1, self.hidden_size, c_len])
+            pairwise_scores = tf.matmul(e_h, m1)
+            attn_weights = tf.nn.softmax(pairwise_scores)
+            weighted_embeddings = tf.matmul(attn_weights, s_h)
+            extended_states = tf.concat(2, [e_h, weighted_embeddings])
+            w_c = tf.get_variable("W_c", (2 * self.hidden_size, self.hidden_size), tf.float32, xav_init)
+            m1 = tf.reshape(extended_states, [-1, 2 * self.hidden_size])
+            h_tilde = tf.tanh(tf.matmul(m1, w_c))
 
             w_e = tf.get_variable("W_e", (self.hidden_size, 1), tf.float32, xav_init)
             b_e = tf.get_variable("b_e", (1,), tf.float32, tf.constant_initializer(0.0))
-            e_h = tf.reshape(e_h, [-1, self.hidden_size])
-            inner = tf.matmul(e_h, w_e) + b_e
+            inner = tf.matmul(h_tilde, w_e) + b_e
             inner = tf.reshape(inner, [-1, c_len])
             end_probs = inner
+
+
+            #w_e = tf.get_variable("W_e", (self.hidden_size, 1), tf.float32, xav_init)
+            #b_e = tf.get_variable("b_e", (1,), tf.float32, tf.constant_initializer(0.0))
+            #e_h = tf.reshape(e_h, [-1, self.hidden_size])
+            #inner = tf.matmul(e_h, w_e) + b_e
+            #inner = tf.reshape(inner, [-1, c_len])
+            #end_probs = inner
 
         """
         with vs.variable_scope("final_decoder_net"):
