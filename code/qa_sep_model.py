@@ -106,7 +106,7 @@ class CoEncoder(object):
 
 # Use simple linear transforms/reductions to decode the outputs from the dynamic
 # coattention encoder
-class GlobalAttentionCoDecoder(object):
+class NaiveCoDecoder(object):
     def __init__(self, hidden_size):
         self.hidden_size = hidden_size
 
@@ -201,7 +201,8 @@ class GlobalAttentionCoDecoder(object):
             extended_states = tf.concat(2, [e_h, weighted_embeddings])
             w_c = tf.get_variable("W_c", (2 * self.hidden_size, self.hidden_size), tf.float32, xav_init)
             m1 = tf.reshape(extended_states, [-1, 2 * self.hidden_size])
-            h_tilde = tf.tanh(tf.matmul(m1, w_c))
+            h_tilde = tf.matmul(m1, w_c)
+            #h_tilde = tf.tanh(tf.matmul(m1, w_c))
 
             w_e = tf.get_variable("W_e", (self.hidden_size, 1), tf.float32, xav_init)
             b_e = tf.get_variable("b_e", (1,), tf.float32, tf.constant_initializer(0.0))
