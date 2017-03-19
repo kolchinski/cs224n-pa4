@@ -61,7 +61,11 @@ class CoEncoder(object):
 
             # Now append the sentinel to each batch
             # sentinel = tf.zeros([B,1,L])
-            sentinel_len = 0
+            sentinel_len = 1
+            c_outputs = tf.map_fn(lambda x: tf.concat(0,[x, tf.zeros([1, hidden_size])]),
+                                  c_outputs, dtype=tf.float32)
+            q_outputs = tf.map_fn(lambda x: tf.concat(0,[x, tf.zeros([1, hidden_size])]),
+                                  q_outputs, dtype=tf.float32)
             # d = tf.concat(1,[c_outputs, sentinel]) # dimensions BxC+1xL
             # q_prime = tf.concat(1,[q_outputs, sentinel]) # dimensions BxQ+1xL
 
@@ -100,9 +104,11 @@ class CoEncoder(object):
                 swap_memory=True)
 
             outputs = tf.concat(2, outputs) # shape BxC+1x2L
-            # outputs = tf.slice(outputs, [0,0,0], [B, C, 2*hidden_size ])
+            # remove last index (introduced by adding sentinel):
+            outputs = tf.slice(outputs, [0,0,0], [-1, C, -1 ])
 
         return outputs
+
 
 # Use simple linear transforms/reductions to decode the outputs from the dynamic
 # coattention encoder
