@@ -216,6 +216,67 @@ class GlobalAttentionCoDecoder(object):
             inner = tf.reshape(inner, [-1, c_len])
             end_probs = inner
 
+
+            # w_e = tf.get_variable("W_e", (self.hidden_size, 1), tf.float32, xav_init)
+            # b_e = tf.get_variable("b_e", (1,), tf.float32, tf.constant_initializer(0.0))
+            # e_h = tf.reshape(e_h, [-1, self.hidden_size])
+            # inner = tf.matmul(e_h, w_e) + b_e
+            # inner = tf.reshape(inner, [-1, c_len])
+            # end_probs = inner
+
+        win_size = 20
+
+        s_start_pad = tf.get_variable("b_e", (1,), tf.float32, tf.constant_initializer(0.0))
+        s_end_pad = tf.get_variable("b_e", (1,), tf.float32, tf.constant_initializer(0.0))
+        e_start_pad = tf.get_variable("b_e", (1,), tf.float32, tf.constant_initializer(0.0))
+        e_end_pad = tf.get_variable("b_e", (1,), tf.float32, tf.constant_initializer(0.0))
+        w_window = tf.get_variable("W_e", (win_size*2 + 1, 1), tf.float32, tf.constant_initializer(0.0))
+
+        # try the window based model
+        window_res = []
+        for loc in range(c_len):
+            window_start = max(0, loc - win_size)
+            window_end = max(c_len, loc + win_size)
+            slice_size = window_end - window_start
+            start_pad_len = window_start - (loc - win_size)
+            end_pad_len = (loc + win_size) - window_end
+
+            start_token_w = tf.slice(start_probs, [0, window_start], [-1, slice_size])
+            end_token_w = tf.slice(end_probs, [0, window_start], [-1, slice_size])
+            if start_pad_len > 0:
+
+                # I am trusting that this works....
+                # http://stackoverflow.com/questions/41923478/dynamically-tile-a-tensor-depending-on-the-batch-size
+                st_pad = tf.tile(s_start_pad, [tf.shape(start_probs)[0], start_pad_len])
+                et_pad = tf.tile(e_start_pad, [tf.shape(start_probs)[0], start_pad_len])
+                start_token_w = tf.concat(x, [st_pad, start_token_w])
+
+
+
+
+
+
+
+
+        """
+        with vs.variable_scope("final_decoder_net"):
+            z = tf.concat(1, [self.nai_start_probs, self.nai_end_probs])
+
+            wfs = tf.get_variable("W_f_s", [2*c_len, 2*c_len], tf.float32, xav_init)
+            bfs = tf.get_variable("B_f_s", [2*c_len], tf.float32, tf.constant_initializer(0.0))
+            z2 = tf.nn.relu(tf.matmul(z, wfs) + bfs)
+
+            wfs2 = tf.get_variable("W_f_s2", [2*c_len, c_len], tf.float32, xav_init)
+            bfs2 = tf.get_variable("B_f_s2", [c_len], tf.float32, tf.constant_initializer(0.0))
+            #start_probs = tf.nn.relu(tf.matmul(z2, wfs2) + bfs2)
+            start_probs = tf.matmul(z2, wfs2) + bfs2
+
+            wfe2 = tf.get_variable("W_f_e2", [2*c_len, c_len], tf.float32, xav_init)
+            bfe2 = tf.get_variable("B_f_e2", [c_len], tf.float32, tf.constant_initializer(0.0))
+            #end_probs = tf.nn.relu(tf.matmul(z2, wfe2) + bfe2)
+            end_probs = tf.matmul(z2, wfe2) + bfe2
+
+        """
         return start_probs, end_probs
 
 
