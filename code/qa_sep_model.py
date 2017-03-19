@@ -104,7 +104,55 @@ class CoEncoder(object):
 
         return outputs
 
-class NaiveCoDecoder(object):
+# Use simple linear transforms/reductions to decode the outputs from the dynamic
+# coattention encoder
+class GlobalAttentionCoDecoder(object):
+    def __init__(self, hidden_size):
+        self.hidden_size = hidden_size
+
+    # Inputs of shape (Batch size) x (Context length) x (2*hidden_size)
+    def decode(self, inputs, lengths, c_len, dropout):
+
+        cell = tf.nn.rnn_cell.LSTMCell(self.hidden_size, use_peepholes=False)
+        cell = tf.nn.rnn_cell.DropoutWrapper(cell, output_keep_prob = 1.0 - dropout)
+        xav_init = tf.contrib.layers.xavier_initializer()
+
+
+        # Decoder for start positions
+        with vs.variable_scope("start_decoder"):
+            s_h, s_h_state = tf.nn.dynamic_rnn(
+                cell=cell, inputs=inputs,
+                sequence_length=lengths, dtype=tf.float32,
+                swap_memory=True)
+
+            w_s = tf.get_variable("W_s", (self.hidden_size, 1), tf.float32, xav_init)
+            b_s = tf.get_variable("b_s", (1,), tf.float32, tf.constant_initializer(0.0))
+            s_h_flat = tf.reshape(s_h, [-1, self.hidden_size])
+            inner = tf.matmul(s_h_flat, w_s) + b_s
+            inner = tf.reshape(inner, [-1, c_len])
+            # start_probs = tf.nn.softmax(inner)
+            start_probs = inner
+
+        # Decoder for end positions
+        with vs.variable_scope("end_decoder"):
+            e_h, _ = tf.nn.dynamic_rnn(
+                cell=cell, inputs=inputs,
+                sequence_length=lengths, dtype=tf.float32,
+                swap_memory=True)
+
+            w_e = tf.get_variable("W_e", (self.hidden_size, 1), tf.float32, xav_init)
+            b_e = tf.get_variable("b_e", (1,), tf.float32, tf.constant_initializer(0.0))
+            e_h = tf.reshape(e_h, [-1, self.hidden_size])
+            inner = tf.matmul(e_h, w_e) + b_e
+            inner = tf.reshape(inner, [-1, c_len])
+            end_probs = inner
+
+        return start_probs, end_probs
+
+
+# Use a global attention mechanism to decode the outputs from the dynamic
+# coattention encoder
+class GlobalAttentionCoDecoder(object):
     def __init__(self, hidden_size):
         self.hidden_size = hidden_size
 
@@ -161,33 +209,6 @@ class NaiveCoDecoder(object):
             inner = tf.reshape(inner, [-1, c_len])
             end_probs = inner
 
-
-            # w_e = tf.get_variable("W_e", (self.hidden_size, 1), tf.float32, xav_init)
-            # b_e = tf.get_variable("b_e", (1,), tf.float32, tf.constant_initializer(0.0))
-            # e_h = tf.reshape(e_h, [-1, self.hidden_size])
-            # inner = tf.matmul(e_h, w_e) + b_e
-            # inner = tf.reshape(inner, [-1, c_len])
-            # end_probs = inner
-
-        """
-        with vs.variable_scope("final_decoder_net"):
-            z = tf.concat(1, [self.nai_start_probs, self.nai_end_probs])
-
-            wfs = tf.get_variable("W_f_s", [2*c_len, 2*c_len], tf.float32, xav_init)
-            bfs = tf.get_variable("B_f_s", [2*c_len], tf.float32, tf.constant_initializer(0.0))
-            z2 = tf.nn.relu(tf.matmul(z, wfs) + bfs)
-
-            wfs2 = tf.get_variable("W_f_s2", [2*c_len, c_len], tf.float32, xav_init)
-            bfs2 = tf.get_variable("B_f_s2", [c_len], tf.float32, tf.constant_initializer(0.0))
-            #start_probs = tf.nn.relu(tf.matmul(z2, wfs2) + bfs2)
-            start_probs = tf.matmul(z2, wfs2) + bfs2
-
-            wfe2 = tf.get_variable("W_f_e2", [2*c_len, c_len], tf.float32, xav_init)
-            bfe2 = tf.get_variable("B_f_e2", [c_len], tf.float32, tf.constant_initializer(0.0))
-            #end_probs = tf.nn.relu(tf.matmul(z2, wfe2) + bfe2)
-            end_probs = tf.matmul(z2, wfe2) + bfe2
-
-        """
         return start_probs, end_probs
 
 
@@ -202,7 +223,7 @@ class QASepSystem(qa_model.QASystem):
     def build_pipeline(self):
         self.encoder = CoEncoder(self.hidden_size, self.in_size,
                                        self.max_c_len, self.max_q_len)
-        self.decoder = NaiveCoDecoder(self.hidden_size)
+        self.decoder = GlobalAttentionCoDecoder(self.hidden_size)
 
 
         self.q_placeholder = tf.placeholder(tf.int32, (None, self.max_q_len))
