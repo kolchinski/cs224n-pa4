@@ -31,14 +31,14 @@ class CoEncoder(object):
         self.q_len = q_len
 
     def encode(self, qs, q_lens, cs, c_lens, dropout):
-        Q = self.q_len #length of questions
-        C = self.c_len #length of contexts
+        Q = self.q_len  # length of questions
+        C = self.c_len  # length of contexts
         hidden_size = self.hidden_size
 
         cell = tf.nn.rnn_cell.LSTMCell(hidden_size)
         cell = tf.nn.rnn_cell.DropoutWrapper(cell, output_keep_prob = 1.0 - dropout)
 
-        #Run the first LSTM on the questions
+        # Run the first LSTM on the questions
         with tf.variable_scope("encoder") as scope:
             xav_init = tf.contrib.layers.xavier_initializer()
             w_q = tf.get_variable("W_q", (hidden_size,hidden_size), tf.float32, xav_init)
@@ -50,20 +50,20 @@ class CoEncoder(object):
                 sequence_length=q_lens, dtype=tf.float32,
                 swap_memory=True)
 
-            scope.reuse_variables() #Keep the same parameters for encoding questions and contexts
+            scope.reuse_variables() # Keep the same parameters for encoding questions and contexts
 
-            #Run the LSTM on the contexts
+            # Run the LSTM on the contexts
             c_outputs, c_states = tf.nn.dynamic_rnn(
                 cell=cell, inputs=cs,
                 sequence_length=c_lens, dtype=tf.float32,
                 swap_memory=True)
 
 
-            #Now append the sentinel to each batch
-            #sentinel = tf.zeros([B,1,L])
+            # Now append the sentinel to each batch
+            # sentinel = tf.zeros([B,1,L])
             sentinel_len = 0
-            #d = tf.concat(1,[c_outputs, sentinel]) #dimensions BxC+1xL
-            #q_prime = tf.concat(1,[q_outputs, sentinel]) #dimensions BxQ+1xL
+            # d = tf.concat(1,[c_outputs, sentinel]) # dimensions BxC+1xL
+            # q_prime = tf.concat(1,[q_outputs, sentinel]) # dimensions BxQ+1xL
 
             doc = c_outputs
             q_prime = q_outputs
@@ -99,8 +99,8 @@ class CoEncoder(object):
                 dtype=tf.float32, inputs=DCd,
                 swap_memory=True)
 
-            outputs = tf.concat(2, outputs) #shape BxC+1x2L
-            #outputs = tf.slice(outputs, [0,0,0], [B, C, 2*hidden_size ])
+            outputs = tf.concat(2, outputs) # shape BxC+1x2L
+            # outputs = tf.slice(outputs, [0,0,0], [B, C, 2*hidden_size ])
 
         return outputs
 
@@ -116,7 +116,7 @@ class NaiveCoDecoder(object):
         xav_init = tf.contrib.layers.xavier_initializer()
 
 
-        #Decoder for start positions
+        # Decoder for start positions
         with vs.variable_scope("start_decoder"):
             s_h, s_h_state = tf.nn.dynamic_rnn(
                 cell=cell, inputs=inputs,
@@ -128,10 +128,10 @@ class NaiveCoDecoder(object):
             s_h_flat = tf.reshape(s_h, [-1, self.hidden_size])
             inner = tf.matmul(s_h_flat, w_s) + b_s
             inner = tf.reshape(inner, [-1, c_len])
-            #start_probs = tf.nn.softmax(inner)
+            # start_probs = tf.nn.softmax(inner)
             start_probs = inner
 
-        #Decoder for end positions
+        # Decoder for end positions
         with vs.variable_scope("end_decoder"):
             e_h, _ = tf.nn.dynamic_rnn(
                 cell=cell, inputs=tf.concat(2,[inputs,s_h]),
@@ -162,12 +162,12 @@ class NaiveCoDecoder(object):
             end_probs = inner
 
 
-            #w_e = tf.get_variable("W_e", (self.hidden_size, 1), tf.float32, xav_init)
-            #b_e = tf.get_variable("b_e", (1,), tf.float32, tf.constant_initializer(0.0))
-            #e_h = tf.reshape(e_h, [-1, self.hidden_size])
-            #inner = tf.matmul(e_h, w_e) + b_e
-            #inner = tf.reshape(inner, [-1, c_len])
-            #end_probs = inner
+            # w_e = tf.get_variable("W_e", (self.hidden_size, 1), tf.float32, xav_init)
+            # b_e = tf.get_variable("b_e", (1,), tf.float32, tf.constant_initializer(0.0))
+            # e_h = tf.reshape(e_h, [-1, self.hidden_size])
+            # inner = tf.matmul(e_h, w_e) + b_e
+            # inner = tf.reshape(inner, [-1, c_len])
+            # end_probs = inner
 
         """
         with vs.variable_scope("final_decoder_net"):
