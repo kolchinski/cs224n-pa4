@@ -240,13 +240,16 @@ class GlobalAttentionCoDecoder(object):
 
         # I was thinking that I needed a token bias (but that is already done in the previous
         # layer)
+        # Commented out
 
+        """
         win_size = 20
         combined_start_end = tf.stack([start_probs, end_probs], 2)
         conv_filter = tf.get_variable("window_filter", [2 * win_size + 1, 2, 2])
         mod_output = tf.nn.conv1d(combined_start_end, conv_filter, stride=1, padding="SAME")
         start_probs, end_probs = tf.unstack(mod_output, num=2, axis=2)
         print("Built Window")
+        """
 
 
         """
