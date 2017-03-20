@@ -9,8 +9,6 @@ import numpy as np
 
 import IPython
 
-import multiprocessing
-
 logging.basicConfig(level=logging.INFO)
 FLAGS = tf.app.flags.FLAGS
 
@@ -132,6 +130,7 @@ class NaiveCoDecoder(object):
                 swap_memory=True)
 
             w_s = tf.get_variable("W_s", (self.hidden_size, 1), tf.float32, xav_init)
+            tf.summary.histogram("decode start weight", w_s)
             b_s = tf.get_variable("b_s", (1,), tf.float32, tf.constant_initializer(0.0))
             s_h_flat = tf.reshape(s_h, [-1, self.hidden_size])
             inner = tf.matmul(s_h_flat, w_s) + b_s
@@ -148,6 +147,7 @@ class NaiveCoDecoder(object):
                 swap_memory=True)
 
             w_e = tf.get_variable("W_e", (self.hidden_size, 1), tf.float32, xav_init)
+            tf.summary.histogram("end decode weight", w_e)
             b_e = tf.get_variable("b_e", (1,), tf.float32, tf.constant_initializer(0.0))
             e_h = tf.reshape(e_h, [-1, self.hidden_size])
             inner = tf.matmul(e_h, w_e) + b_e
@@ -281,6 +281,7 @@ class QASepSystem(qa_model.QASystem):
         # self.out_size = output_size
         self.eval_res_file = open(FLAGS.log_dir + "/eval_res.txt", 'w')
         self.extra_log_process = None
+        self.batch_num = 0
 
     def build_pipeline(self):
         self.encoder = CoEncoder(self.hidden_size, self.in_size,
@@ -309,14 +310,15 @@ class QASepSystem(qa_model.QASystem):
             decode_res = self.setup_system(embeds)
             final_res = tf.stack(decode_res, axis=2)
             self.loss = self.setup_loss(decode_res)
+            tf.summary.histogram("losses", self.loss)
 
             # build the results
             self.results = tf.argmax(final_res, axis=1)
 
         self.train_op = tf.train.AdamOptimizer().minimize(self.loss)
 
-
         # has to be after the whole pipeline is built
+        self.summ = tf.summary.merge_all()
         self.saver = tf.train.Saver()
 
     def setup_embeddings(self):
@@ -347,6 +349,12 @@ class QASepSystem(qa_model.QASystem):
         with vs.variable_scope("loss"):
             ce_wl = tf.nn.sparse_softmax_cross_entropy_with_logits
             start_labels, end_labels = tf.unpack(self.labels_placeholder, axis=1)
+            self.start_labels = tf.nn.softmax(start_labels)
+            self.end_labels = tf.nn.softmax(end_labels)
+
+            tf.summary.histogram("start_labels_probs", self.start_labels)
+            tf.summary.histogram("end_labels_probs", self.end_labels)
+
             start_losses = ce_wl(final_res[0], start_labels)
             end_losses = ce_wl(final_res[1], end_labels)
 
@@ -434,11 +442,15 @@ class QASepSystem(qa_model.QASystem):
     def pad_ele(seq, max_len):
         return seq + (max_len - len(seq)) * [0]
 
-    def train_on_batch(self, session, batch_data):
+    def train_on_batch(self, session, batch_data, capture_summary=False):
         """Perform one step of gradient descent on the provided batch of data.
         """
-
         feed_dict = self.prepare_data(batch_data, dropout=FLAGS.dropout)
+
+        if not (self.batch_num % (2048 // FLAGS.batch_size * 5)):
+            [s] = session.run(sum, feed_dict=feed_dict)
+            self.writer.add_summary(s, self.batch_num)
+        self.batch_num += 1
         _, l = session.run([self.train_op, self.loss], feed_dict=feed_dict)
         return l
 
@@ -467,9 +479,13 @@ class QASepSystem(qa_model.QASystem):
             self.extra_log_process.join()  # make sure it has finished by now
 
         pred_probs = []
+        start_probs, end_probs = [], []
         for batch in self.build_batches(eval_set, shuffle=False):
             feed_dict = self.prepare_data(zip(*batch))
-            pred_probs.extend(session.run([self.results], feed_dict=feed_dict)[0])
+            r, s, e = session.run([self.results, self.start_labels, self.end_labels], feed_dict=feed_dict)
+            pred_probs.extend(r)
+            start_probs.extend(s)
+            end_probs.extend(e)
 
         gold_spans = [self.selector_sequence(start, end, self.max_c_len) for start, end in gold_probs]
         pred_spans = [self.selector_sequence(start, end, self.max_c_len) for start, end in pred_probs]
@@ -481,15 +497,28 @@ class QASepSystem(qa_model.QASystem):
         f1 = np.mean(f1s)
         em = np.mean(ems)
 
+        is_dev = dataset is self.dev_qas  # bad hack
+
         if log:
             logging.info("F1: {}, EM: {}, for {} samples".format(f1, em, sample))
             logging.info("Precision: {}, Recall: {}; {} total words predicted\n".format(
                 np.mean(precisions), np.mean(recalls), np.sum(pred_spans)))
 
+            # write to disk the start, end probabilites and also the true values?
+
+            data_loc = FLAGS.log_dir + "/pred_spans/epoch{}_{}.npz"\
+                .format(self.epoch, "dev" if is_dev else "train")
+
+            np.savez_compressed(data_loc, gold_spans=gold_probs, start_probs=start_probs,
+                                end_probs=end_probs)
+
             # if self.epoch % 5 == 1:
-            if dataset is self.dev_qas:  # bad hack
+            if is_dev:
                 self.eval_res_file.write("\n\nEpoch {}:".format(self.epoch))
-                self.extended_log(self.vocab, self.eval_res_file, q_vec, gold_s, pred_s, ems, f1s)
+                start_pred_probs = [start_probs[s] for s, e in pred_probs]
+                end_pred_probs = [end_probs[e] for s, e in pred_probs]
+                self.extended_log(self.vocab, self.eval_res_file, q_vec, gold_s, pred_s, ems,
+                                  f1s, start_pred_probs, end_pred_probs)
 
             """
             self.extra_log_process = \
@@ -529,43 +558,46 @@ class QASepSystem(qa_model.QASystem):
         return feed_dict
 
     @staticmethod
-    def extended_log(vocab, eval_res_file, q_vec, gold_s, pred_s, ems, f1s):
+    def extended_log(vocab, eval_res_file, q_vec, gold_s, pred_s, ems, f1s, start_probs, end_probs):
         # all the evaluate info
         text = lambda vecs: ' '.join(vocab[i] for i in vecs)
 
         # sorting into buckets
         em_sents, partial_matches, no_match, empty = [[] for i in range(4)]
-        for ques, gold, our, is_em, sample_f1 in zip(q_vec, gold_s, pred_s, ems, f1s):
+        for ques, gold, our, is_em, sample_f1, s, e in \
+                zip(q_vec, gold_s, pred_s, ems, f1s, start_probs, end_probs):
             if len(our) == 0:
-                empty.append((ques, gold))
+                empty.append((ques, gold, s, e))
             elif is_em:
-                em_sents.append((ques, gold))
+                em_sents.append((ques, gold, s, e))
             elif sample_f1 > 0:
-                partial_matches.append((ques, gold, our))
+                partial_matches.append((ques, gold, our, s, e))
             else:
-                no_match.append((ques, gold, our))
+                no_match.append((ques, gold, our, s, e))
 
+        def write_ques_theirs(group):
+            for ques, gold, start, end in group[:50]:
+                eval_res_file.write("Ques: " + text(ques) + "\n")
+                eval_res_file.write("Answ: " + gold + "\n")
+                eval_res_file.write("Start Prob: {}, End Prob {}".format(start, end))
+
+        def write_ques_all(group):
+            for ques, gold, our, start, end in group[:50]:
+                eval_res_file.write("Ques: " + text(ques) + "\n")
+                eval_res_file.write("Answ: " + gold + "\n")
+                eval_res_file.write("OurA: " + our + "\n")
+                eval_res_file.write("Start Prob: {}, End Prob {}".format(start, end))
 
         # Yes, my fellow CS107 TAs will hate this....
         eval_res_file.write("\n###Section: Exact Matches\n")
-        for ques, gold in em_sents[:50]:
-            eval_res_file.write("Ques: " + text(ques) + "\n")
-            eval_res_file.write("Answ: " + gold + "\n")
+        write_ques_theirs(em_sents)
 
         eval_res_file.write("\n###Section: Sents where we didn't predict anything\n")
-        for ques, gold in empty[:50]:
-            eval_res_file.write("Ques: " + text(ques) + "\n")
-            eval_res_file.write("Answ: " + gold + "\n")
+        write_ques_theirs(empty)
 
         eval_res_file.write("\n###Section: Partial matches\n")
-        for ques, gold, our in partial_matches[:50]:
-            eval_res_file.write("Ques: " + text(ques) + "\n")
-            eval_res_file.write("Answ: " + gold + "\n")
-            eval_res_file.write("OurA: " + our + "\n")
+        write_ques_all(partial_matches)
 
         eval_res_file.write("\n###Section: No matches\n")
-        for ques, gold, our in no_match[:50]:
-            eval_res_file.write("Ques: " + text(ques) + "\n")
-            eval_res_file.write("Answ: " + gold + "\n")
-            eval_res_file.write("OurA: " + our + "\n")
+        write_ques_all(no_match)
 

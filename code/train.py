@@ -146,6 +146,10 @@ def main(_):
         print("Initializing model")
         initialize_model(sess, qa, load_train_dir)
 
+        writer = tf.summary.FileWriter(FLAGS.log_dir + "/tensorboard")
+        qa.writer = writer
+        writer.add_graph(sess.graph)
+
         # print_all_vars()
         save_train_dir = get_normalized_train_dir(FLAGS.train_dir)
         qa.train(sess, save_train_dir)
