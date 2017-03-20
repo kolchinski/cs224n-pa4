@@ -138,6 +138,7 @@ class NaiveCoDecoder(object):
             inner = tf.reshape(inner, [-1, c_len])
             # start_probs = tf.nn.softmax(inner)
             start_probs = inner
+            self.nai_start_probs = start_probs
 
         # Decoder for end positions
         with vs.variable_scope("end_decoder"):
@@ -152,6 +153,7 @@ class NaiveCoDecoder(object):
             inner = tf.matmul(e_h, w_e) + b_e
             inner = tf.reshape(inner, [-1, c_len])
             end_probs = inner
+            self.nai_end_probs = end_probs
 
         win_size = 20
         combined_start_end = tf.stack([start_probs, end_probs], 2)
@@ -343,13 +345,13 @@ class QASepSystem(qa_model.QASystem):
             start_losses = ce_wl(final_res[0], start_labels)
             end_losses = ce_wl(final_res[1], end_labels)
 
-            # nai_start_losses = ce_wl(self.decoder.nai_start_probs, start_labels)
-            # nai_end_losses = ce_wl(self.decoder.nai_end_probs, end_labels)
+            nai_start_losses = ce_wl(self.decoder.nai_start_probs, start_labels)
+            nai_end_losses = ce_wl(self.decoder.nai_end_probs, end_labels)
 
             # TODO: figure out how to do masking properly
             # tf.boolean_mask(losses, self.mask_placeholder)
-            loss = tf.reduce_mean(start_losses + end_losses)
-            #                      (nai_start_losses + nai_end_losses)/5)
+            loss = tf.reduce_mean(start_losses + end_losses +
+                                 (nai_start_losses + nai_end_losses)/5)
 
         return loss
 
