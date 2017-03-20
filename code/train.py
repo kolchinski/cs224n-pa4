@@ -105,6 +105,15 @@ def main(_):
     # print("Initializing vocab")
     # vocab_path = FLAGS.vocab_path or pjoin(FLAGS.data_dir, "vocab.dat")
     # vocab, rev_vocab = initialize_vocab(vocab_path)
+
+    # Print out info useful for reproducibility
+    import subprocess
+    text = "output_dir: " + FLAGS.output_path
+    text += "\nLatest Git Commit Info\n"
+    text += subprocess.check_output("git log --name-status HEAD^..HEAD".split())
+    print(text)
+    logging.info(text)
+
     if not os.path.exists(FLAGS.log_dir):
         os.makedirs(FLAGS.log_dir)
     if not os.path.exists(FLAGS.output_path):
