@@ -39,7 +39,7 @@ tf.app.flags.DEFINE_string("vocab_path", "data/squad/vocab.dat", "Path to vocab 
 tf.app.flags.DEFINE_string("embed_path", "", "Path to the trimmed GLoVe embedding (default: ./data/squad/glove.trimmed.{embedding_size}.npz)")
 tf.app.flags.DEFINE_string("dev_path", "data/squad/dev-v1.1.json", "Path to the JSON dev set to evaluate against (default: ./data/squad/dev-v1.1.json)")
 tf.app.flags.DEFINE_string("is_prod", is_azure, "Adjust batch size and num of epochs for non prod for debugging")
-
+# tf.app.flags.DEFINE_string("output_path", "results/{:%Y%m%d_%H%M%S}/".format(datetime.now()), "output locations")
 
 def initialize_model(session, model, train_dir, is_eval=False):
     ckpt = tf.train.get_checkpoint_state(train_dir + "/best/")
@@ -79,6 +79,7 @@ def read_dataset(dataset, tier, vocab):
     context_data = []
     query_data = []
     question_uuid_data = []
+    all_context_tokens = []
 
     for articles_id in tqdm(range(len(dataset['data'])), desc="Preprocessing {}".format(tier)):
         article_paragraphs = dataset['data'][articles_id]['paragraphs']
@@ -105,8 +106,9 @@ def read_dataset(dataset, tier, vocab):
                 context_data.append(context_ids)
                 query_data.append(qustion_ids)
                 question_uuid_data.append(question_uuid)
+                all_context_tokens.append(context_tokens)
 
-    return context_data, context_tokens, query_data, question_uuid_data
+    return context_data, all_context_tokens, query_data, question_uuid_data
 
 
 def prepare_dev(prefix, dev_filename, vocab):
@@ -138,7 +140,6 @@ def generate_answers(sess, model, dataset, rev_vocab, context_toks):
     :param rev_vocab: this is a list of vocabulary that maps index to actual words
     :return:
     """
-    return model.gen_test_answers(sess, dataset, rev_vocab, context_toks)
 
 
 def get_normalized_train_dir(train_dir):
@@ -204,7 +205,8 @@ def main(_):
         train_dir = get_normalized_train_dir(FLAGS.train_dir)
         #if not is_azure: os.chdir("..")
         initialize_model(sess, qa, train_dir, True)
-        answers = generate_answers(sess, qa, eval_ds, rev_vocab, context_tokens)
+        answers = qa.gen_test_answers(sess, dataset, rev_vocab, context_tokens)
+        # answers = generate_answers(sess, qa, eval_ds, rev_vocab, context_tokens)
 
         print(os.listdir('.'))
         print(os.getcwd())

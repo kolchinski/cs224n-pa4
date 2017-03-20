@@ -279,7 +279,7 @@ class QASepSystem(qa_model.QASystem):
         self.in_size = input_size
         self.hidden_size = hidden_size
         # self.out_size = output_size
-        self.eval_res_file = open(FLAGS.output_path + "/eval_res.txt", 'w')
+        self.eval_res_file = None
         self.extra_log_process = None
         self.batch_num = 0
 
@@ -514,6 +514,9 @@ class QASepSystem(qa_model.QASystem):
 
             # if self.epoch % 5 == 1:
             if is_dev:
+                if self.eval_res_file is None:
+                    self.eval_res_file = open(FLAGS.output_path + "/eval_res.txt", 'w')
+
                 self.eval_res_file.write("\n\nEpoch {}:".format(self.epoch))
                 start_pred_probs = [s_probs[s] for s_probs, (s, e) in zip(start_probs, pred_probs)]
                 end_pred_probs = [e_probs[e] for e_probs, (s, e) in zip(end_probs, pred_probs)]
