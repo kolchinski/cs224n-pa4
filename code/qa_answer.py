@@ -26,10 +26,10 @@ is_azure = (socket.gethostname() == "cs224n-gpu")
 FLAGS = tf.app.flags.FLAGS
 
 tf.app.flags.DEFINE_float("learning_rate", 0.001, "Learning rate.")
-tf.app.flags.DEFINE_float("dropout", 0.15, "Fraction of units randomly dropped on non-recurrent connections.")
-tf.app.flags.DEFINE_integer("batch_size", 10, "Batch size to use during training.")
+tf.app.flags.DEFINE_float("dropout", 0.6, "Fraction of units randomly dropped on non-recurrent connections.")
+tf.app.flags.DEFINE_integer("batch_size", 256, "Batch size to use during training.")
 tf.app.flags.DEFINE_integer("epochs", 0, "Number of epochs to train.")
-tf.app.flags.DEFINE_integer("state_size", 200, "Size of each model layer.")
+tf.app.flags.DEFINE_integer("state_size", 300, "Size of each model layer.")
 tf.app.flags.DEFINE_integer("embedding_size", 100, "Size of the pretrained vocabulary.")
 tf.app.flags.DEFINE_integer("output_size", 750, "The output size of your model.")
 tf.app.flags.DEFINE_integer("keep", 0, "How many checkpoints to keep, 0 indicates keep all.")
@@ -42,11 +42,12 @@ tf.app.flags.DEFINE_string("is_prod", is_azure, "Adjust batch size and num of ep
 
 
 def initialize_model(session, model, train_dir, is_eval=False):
-    ckpt = tf.train.get_checkpoint_state(train_dir + "/best")
+    ckpt = tf.train.get_checkpoint_state(train_dir + "/best/best/")
     v2_path = ckpt.model_checkpoint_path + ".index" if ckpt else ""
     if ckpt and (tf.gfile.Exists(ckpt.model_checkpoint_path) or tf.gfile.Exists(v2_path)):
         logging.info("Reading model parameters from %s" % ckpt.model_checkpoint_path)
-        # model.saver.restore(session, ckpt.model_checkpoint_path)
+        #model.saver.restore(session, ckpt.model_checkpoint_path)
+        model.saver.restore(session, './train/best/')
     else:
         if is_eval:
             raise Exception("Couldn't find model parameters for eval. ckpt: {}")
@@ -65,7 +66,8 @@ def initialize_vocab(vocab_path):
         vocab = dict([(x, y) for (y, x) in enumerate(rev_vocab)])
         return vocab, rev_vocab
     else:
-        raise ValueError("Vocabulary file %s not found.", vocab_path)
+        #raise ValueError("Vocabulary file %s not found.", vocab_path)
+        raise ValueError("Vocabulary file {} not found. Current dir {}".format(vocab_path, os.listdir('.')))
 
 
 def read_dataset(dataset, tier, vocab):

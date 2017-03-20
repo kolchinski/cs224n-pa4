@@ -285,8 +285,8 @@ class QASepSystem(qa_model.QASystem):
     def build_pipeline(self):
         self.encoder = CoEncoder(self.hidden_size, self.in_size,
                                        self.max_c_len, self.max_q_len)
-        # self.decoder = GlobalAttentionCoDecoder(self.hidden_size)
-        self.decoder = NaiveCoDecoder(self.hidden_size)
+        self.decoder = GlobalAttentionCoDecoder(self.hidden_size)
+        #self.decoder = NaiveCoDecoder(self.hidden_size)
 
 
         self.q_placeholder = tf.placeholder(tf.int32, (None, self.max_q_len))
@@ -510,7 +510,7 @@ class QASepSystem(qa_model.QASystem):
             pred_probs.extend(session.run([self.results], feed_dict=feed_dict)[0])
 
         pred_vecs = [sent[start:end +1] for sent, (start, end) in zip(ctx_vec, pred_probs)]
-        pred_sents = [' '.join(vocab[i] for i in pred_vecs) for vec in pred_vecs]
+        pred_sents = [' '.join(vocab[i] for i in vec) for vec in pred_vecs]
 
         return dict(zip(uuids, pred_sents))
 

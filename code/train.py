@@ -23,10 +23,10 @@ tf.app.flags.DEFINE_float("coattention", 1, "Proportionality multiplier for fals
 tf.app.flags.DEFINE_float("recall_multiplier", 200, "Proportionality multiplier for false negative penalty")
 tf.app.flags.DEFINE_float("learning_rate", 0.001, "Learning rate.")
 tf.app.flags.DEFINE_float("max_gradient_norm", 10.0, "Clip gradients to this norm.")
-tf.app.flags.DEFINE_float("dropout", 0.3, "Fraction of units randomly dropped on non-recurrent connections.")
-tf.app.flags.DEFINE_integer("batch_size", 512 if is_azure else 10, "Batch size to use during training.")
+tf.app.flags.DEFINE_float("dropout", 0.6, "Fraction of units randomly dropped on non-recurrent connections.")
+tf.app.flags.DEFINE_integer("batch_size", 256 if is_azure else 10, "Batch size to use during training.")
 tf.app.flags.DEFINE_integer("epochs", 350, "Number of epochs to train.")
-tf.app.flags.DEFINE_integer("state_size", 200 if is_azure else 100, "Size of each model layer.")
+tf.app.flags.DEFINE_integer("state_size", 300 if is_azure else 100, "Size of each model layer.")
 tf.app.flags.DEFINE_integer("output_size", 750, "The output size of your model.")
 tf.app.flags.DEFINE_integer("embedding_size", 100, "Size of the pretrained vocabulary.")
 tf.app.flags.DEFINE_string("data_dir", "data/squad", "SQuAD directory (default ./data/squad)")
@@ -69,7 +69,7 @@ def initialize_vocab(vocab_path):
         vocab = dict([(x, y) for (y, x) in enumerate(rev_vocab)])
         return vocab, rev_vocab
     else:
-        raise ValueError("Vocabulary file %s not found.", vocab_path)
+        raise ValueError("Vocabulary file {} not found. Current dir {}".format(vocab_path, os.getcwd()))
 
 
 def get_normalized_train_dir(train_dir):
@@ -100,7 +100,7 @@ def main(_):
     #embed_path = FLAGS.embed_path or pjoin("data", "squad", "glove.trimmed.{}.npz".format(FLAGS.embedding_size))
     print(tf.__version__)
 
-    if not is_azure: os.chdir('..')
+    #if not is_azure: os.chdir('..')
     # we never use this
     # print("Initializing vocab")
     # vocab_path = FLAGS.vocab_path or pjoin(FLAGS.data_dir, "vocab.dat")
