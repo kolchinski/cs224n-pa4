@@ -155,12 +155,14 @@ class NaiveCoDecoder(object):
             end_probs = inner
             self.nai_end_probs = end_probs
 
+        """
         win_size = 20
         combined_start_end = tf.stack([start_probs, end_probs], 2)
         conv_filter = tf.get_variable("window_filter", [2 * win_size + 1, 2, 2])
         mod_output = tf.nn.conv1d(combined_start_end, conv_filter, stride=1, padding="SAME")
         start_probs, end_probs = tf.unstack(mod_output, num=2, axis=2)
         print("Built Window")
+        """
 
         return start_probs, end_probs
 
@@ -345,13 +347,13 @@ class QASepSystem(qa_model.QASystem):
             start_losses = ce_wl(final_res[0], start_labels)
             end_losses = ce_wl(final_res[1], end_labels)
 
-            nai_start_losses = ce_wl(self.decoder.nai_start_probs, start_labels)
-            nai_end_losses = ce_wl(self.decoder.nai_end_probs, end_labels)
+            # nai_start_losses = ce_wl(self.decoder.nai_start_probs, start_labels)
+            # nai_end_losses = ce_wl(self.decoder.nai_end_probs, end_labels)
 
             # TODO: figure out how to do masking properly
             # tf.boolean_mask(losses, self.mask_placeholder)
-            loss = tf.reduce_mean(start_losses + end_losses +
-                                 (nai_start_losses + nai_end_losses)/5)
+            loss = tf.reduce_mean(start_losses + end_losses )
+            #                     (nai_start_losses + nai_end_losses)/5)
 
         return loss
 
