@@ -121,27 +121,6 @@ def prepare_dev(prefix, dev_filename, vocab):
     return context_data, question_data, context_tokens, question_uuid_data
 
 
-def generate_answers(sess, model, dataset, rev_vocab, context_toks):
-    """
-    Loop over the dev or test dataset and generate answer.
-
-    Note: output format must be answers[uuid] = "real answer"
-    You must provide a string of words instead of just a list, or start and end index
-
-    In main() function we are dumping onto a JSON file
-
-    evaluate.py will take the output JSON along with the original JSON file
-    and output a F1 and EM
-
-    You must implement this function in order to submit to Leaderboard.
-
-    :param sess: active TF session
-    :param model: a built QASystem model
-    :param rev_vocab: this is a list of vocabulary that maps index to actual words
-    :return:
-    """
-
-
 def get_normalized_train_dir(train_dir):
     """
     Adds symlink to {train_dir} from /tmp/cs224n-squad-train to canonicalize the
