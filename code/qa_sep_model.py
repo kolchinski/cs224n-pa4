@@ -349,11 +349,11 @@ class QASepSystem(qa_model.QASystem):
         with vs.variable_scope("loss"):
             ce_wl = tf.nn.sparse_softmax_cross_entropy_with_logits
             start_labels, end_labels = tf.unpack(self.labels_placeholder, axis=1)
-            self.start_labels = tf.nn.softmax(start_labels)
-            self.end_labels = tf.nn.softmax(end_labels)
+            self.start_preds = tf.nn.softmax(final_res[0])
+            self.end_preds = tf.nn.softmax(final_res[1])
 
-            tf.summary.histogram("start_labels_probs", self.start_labels)
-            tf.summary.histogram("end_labels_probs", self.end_labels)
+            tf.summary.histogram("start_labels_probs", self.start_preds)
+            tf.summary.histogram("end_labels_probs", self.end_preds)
 
             start_losses = ce_wl(final_res[0], start_labels)
             end_losses = ce_wl(final_res[1], end_labels)
@@ -482,7 +482,7 @@ class QASepSystem(qa_model.QASystem):
         start_probs, end_probs = [], []
         for batch in self.build_batches(eval_set, shuffle=False):
             feed_dict = self.prepare_data(zip(*batch))
-            r, s, e = session.run([self.results, self.start_labels, self.end_labels], feed_dict=feed_dict)
+            r, s, e = session.run([self.results, self.start_preds, self.end_preds], feed_dict=feed_dict)
             pred_probs.extend(r)
             start_probs.extend(s)
             end_probs.extend(e)

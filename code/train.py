@@ -129,7 +129,7 @@ def main(_):
     text += "\nLatest Git Commit Info\n"
     git_info = subprocess.check_output("git log --name-status HEAD^..HEAD".split())
     if six.PY3:
-        git_info = git_info.encode('utf-8')
+        git_info = git_info.decode('utf-8')
     text += git_info
     print(text)
     logging.info(text)
