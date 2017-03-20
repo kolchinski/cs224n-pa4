@@ -153,6 +153,13 @@ class NaiveCoDecoder(object):
             inner = tf.reshape(inner, [-1, c_len])
             end_probs = inner
 
+        win_size = 20
+        combined_start_end = tf.stack([start_probs, end_probs], 2)
+        conv_filter = tf.get_variable("window_filter", [2 * win_size + 1, 2, 2])
+        mod_output = tf.nn.conv1d(combined_start_end, conv_filter, stride=1, padding="SAME")
+        start_probs, end_probs = tf.unstack(mod_output, num=2, axis=2)
+        print("Built Window")
+
         return start_probs, end_probs
 
 
@@ -223,39 +230,19 @@ class GlobalAttentionCoDecoder(object):
             # inner = tf.matmul(e_h, w_e) + b_e
             # inner = tf.reshape(inner, [-1, c_len])
             # end_probs = inner
+        
+        # window model v2:
+        # using a convolutional model to easily create a window model
+
+        # I was thinking that I needed a token bias (but that is already done in the previous
+        # layer)
 
         win_size = 20
-
-        s_start_pad = tf.get_variable("b_e", (1,), tf.float32, tf.constant_initializer(0.0))
-        s_end_pad = tf.get_variable("b_e", (1,), tf.float32, tf.constant_initializer(0.0))
-        e_start_pad = tf.get_variable("b_e", (1,), tf.float32, tf.constant_initializer(0.0))
-        e_end_pad = tf.get_variable("b_e", (1,), tf.float32, tf.constant_initializer(0.0))
-        w_window = tf.get_variable("W_e", (win_size*2 + 1, 1), tf.float32, tf.constant_initializer(0.0))
-
-        # try the window based model
-        window_res = []
-        for loc in range(c_len):
-            window_start = max(0, loc - win_size)
-            window_end = max(c_len, loc + win_size)
-            slice_size = window_end - window_start
-            start_pad_len = window_start - (loc - win_size)
-            end_pad_len = (loc + win_size) - window_end
-
-            start_token_w = tf.slice(start_probs, [0, window_start], [-1, slice_size])
-            end_token_w = tf.slice(end_probs, [0, window_start], [-1, slice_size])
-            if start_pad_len > 0:
-
-                # I am trusting that this works....
-                # http://stackoverflow.com/questions/41923478/dynamically-tile-a-tensor-depending-on-the-batch-size
-                st_pad = tf.tile(s_start_pad, [tf.shape(start_probs)[0], start_pad_len])
-                et_pad = tf.tile(e_start_pad, [tf.shape(start_probs)[0], start_pad_len])
-                start_token_w = tf.concat(x, [st_pad, start_token_w])
-
-
-
-
-
-
+        combined_start_end = tf.stack([start_probs, end_probs], 2)
+        conv_filter = tf.get_variable("window_filter", [2 * win_size + 1, 2, 2])
+        mod_output = tf.nn.conv1d(combined_start_end, conv_filter, stride=1, padding="SAME")
+        start_probs, end_probs = tf.unstack(mod_output, num=2, axis=2)
+        print("Built Window")
 
 
         """
