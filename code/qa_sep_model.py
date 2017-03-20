@@ -126,14 +126,14 @@ class NaiveCoDecoder(object):
 
         # Decoder for start positions
         with vs.variable_scope("start_decoder"):
-            s_h, s_h_state = tf.nn.dynamic_rnn(
-                cell=cell, inputs=inputs,
+            s_h, s_h_state = tf.nn.bidirectional_dynamic_rnn(
+                cell_fw=cell, cell_bw=cell, inputs=inputs,
                 sequence_length=lengths, dtype=tf.float32,
                 swap_memory=True)
 
-            w_s = tf.get_variable("W_s", (self.hidden_size, 1), tf.float32, xav_init)
+            w_s = tf.get_variable("W_s", (2*self.hidden_size, 1), tf.float32, xav_init)
             b_s = tf.get_variable("b_s", (1,), tf.float32, tf.constant_initializer(0.0))
-            s_h_flat = tf.reshape(s_h, [-1, self.hidden_size])
+            s_h_flat = tf.reshape(s_h, [-1, 2*self.hidden_size])
             inner = tf.matmul(s_h_flat, w_s) + b_s
             inner = tf.reshape(inner, [-1, c_len])
             # start_probs = tf.nn.softmax(inner)
@@ -141,14 +141,14 @@ class NaiveCoDecoder(object):
 
         # Decoder for end positions
         with vs.variable_scope("end_decoder"):
-            e_h, _ = tf.nn.dynamic_rnn(
-                cell=cell, inputs=inputs,
+            e_h, _ = tf.nn.bidirectional_dynamic_rnn(
+                cell_fw=cell, cell_bw=cell, inputs=inputs,
                 sequence_length=lengths, dtype=tf.float32,
                 swap_memory=True)
 
-            w_e = tf.get_variable("W_e", (self.hidden_size, 1), tf.float32, xav_init)
+            w_e = tf.get_variable("W_e", (2*self.hidden_size, 1), tf.float32, xav_init)
             b_e = tf.get_variable("b_e", (1,), tf.float32, tf.constant_initializer(0.0))
-            e_h = tf.reshape(e_h, [-1, self.hidden_size])
+            e_h = tf.reshape(e_h, [-1, 2*self.hidden_size])
             inner = tf.matmul(e_h, w_e) + b_e
             inner = tf.reshape(inner, [-1, c_len])
             end_probs = inner
@@ -230,7 +230,8 @@ class QASepSystem(qa_model.QASystem):
     def build_pipeline(self):
         self.encoder = CoEncoder(self.hidden_size, self.in_size,
                                        self.max_c_len, self.max_q_len)
-        self.decoder = GlobalAttentionCoDecoder(self.hidden_size)
+        #self.decoder = GlobalAttentionCoDecoder(self.hidden_size)
+        self.decoder = NaiveCoDecoder(self.hidden_size)
 
 
         self.q_placeholder = tf.placeholder(tf.int32, (None, self.max_q_len))
