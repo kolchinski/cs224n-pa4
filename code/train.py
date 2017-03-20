@@ -107,8 +107,10 @@ def main(_):
     # vocab_path = FLAGS.vocab_path or pjoin(FLAGS.data_dir, "vocab.dat")
     # vocab, rev_vocab = initialize_vocab(vocab_path)
 
-    if not os.path.exists(FLAGS.log_dir):
-        os.makedirs(FLAGS.log_dir)
+    numpy_log_dir = FLAGS.log_dir + "/pred_spans"
+    if not os.path.exists(numpy_log_dir):
+        os.makedirs(numpy_log_dir)
+
     if not os.path.exists(FLAGS.output_path):
         os.makedirs(FLAGS.output_path)
 

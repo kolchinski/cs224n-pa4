@@ -515,8 +515,8 @@ class QASepSystem(qa_model.QASystem):
             # if self.epoch % 5 == 1:
             if is_dev:
                 self.eval_res_file.write("\n\nEpoch {}:".format(self.epoch))
-                start_pred_probs = [start_probs[s] for s, e in pred_probs]
-                end_pred_probs = [end_probs[e] for s, e in pred_probs]
+                start_pred_probs = [s_probs[s] for s_probs, (s, e) in zip(start_probs, pred_probs)]
+                end_pred_probs = [e_probs[e] for e_probs, (s, e) in zip(end_probs, pred_probs)]
                 self.extended_log(self.vocab, self.eval_res_file, q_vec, gold_s, pred_s, ems,
                                   f1s, start_pred_probs, end_pred_probs)
 
