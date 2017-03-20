@@ -206,9 +206,9 @@ def main(_):
         initialize_model(sess, qa, train_dir, True)
         answers = generate_answers(sess, qa, eval_ds, rev_vocab, context_tokens)
 
-	print(os.listdir('.'))
-	print(os.getcwd())
-	print(os.path.abspath('.'))
+        print(os.listdir('.'))
+        print(os.getcwd())
+        print(os.path.abspath('.'))
 
         # write to json file to root dir
         with io.open('dev-prediction.json', 'w', encoding='utf-8') as f:
