@@ -107,12 +107,12 @@ def main(_):
     # vocab_path = FLAGS.vocab_path or pjoin(FLAGS.data_dir, "vocab.dat")
     # vocab, rev_vocab = initialize_vocab(vocab_path)
 
-    numpy_log_dir = FLAGS.log_dir + "/pred_spans"
+    numpy_log_dir = FLAGS.output_path + "/pred_spans"
     if not os.path.exists(numpy_log_dir):
         os.makedirs(numpy_log_dir)
 
-    if not os.path.exists(FLAGS.output_path):
-        os.makedirs(FLAGS.output_path)
+    if not os.path.exists(FLAGS.log_dir):
+        os.makedirs(FLAGS.log_dir)
 
     print("Building QASystem")
     qa = QASepSystem(FLAGS.embedding_size, FLAGS.state_size)
@@ -123,6 +123,8 @@ def main(_):
     qa.build_pipeline()
 
     file_handler = logging.FileHandler(pjoin(FLAGS.log_dir, "log.txt"))
+    logging.getLogger().addHandler(file_handler)
+    file_handler = logging.FileHandler(pjoin(FLAGS.output_path, "log.txt"))
     logging.getLogger().addHandler(file_handler)
 
     # Print out info useful for reproducibility
@@ -135,11 +137,11 @@ def main(_):
     text += git_info
     print(text)
     logging.info(text)
-    with open(os.path.join(FLAGS.log_dir, "git_info"), 'w') as fout:
+    with open(os.path.join(FLAGS.output_path, "git_info"), 'w') as fout:
         fout.write(text)
 
     print("Flags: ", vars(FLAGS))
-    with open(os.path.join(FLAGS.log_dir, "flags.json"), 'w') as fout:
+    with open(os.path.join(FLAGS.output_path, "flags.json"), 'w') as fout:
         json.dump(FLAGS.__flags, fout)
 
     with tf.Session() as sess:
@@ -148,7 +150,7 @@ def main(_):
         print("Initializing model")
         initialize_model(sess, qa, load_train_dir)
 
-        writer = tf.summary.FileWriter(FLAGS.log_dir + "/tensorboard")
+        writer = tf.summary.FileWriter(FLAGS.output_path + "/tensorboard")
         qa.writer = writer
         writer.add_graph(sess.graph)
 

@@ -279,7 +279,7 @@ class QASepSystem(qa_model.QASystem):
         self.in_size = input_size
         self.hidden_size = hidden_size
         # self.out_size = output_size
-        self.eval_res_file = open(FLAGS.log_dir + "/eval_res.txt", 'w')
+        self.eval_res_file = open(FLAGS.output_path + "/eval_res.txt", 'w')
         self.extra_log_process = None
         self.batch_num = 0
 
@@ -506,7 +506,7 @@ class QASepSystem(qa_model.QASystem):
 
             # write to disk the start, end probabilites and also the true values?
 
-            data_loc = FLAGS.log_dir + "/pred_spans/epoch{}_{}.npz"\
+            data_loc = FLAGS.output_path + "/pred_spans/epoch{}_{}.npz"\
                 .format(self.epoch, "dev" if is_dev else "train")
 
             np.savez_compressed(data_loc, gold_spans=gold_probs, start_probs=start_probs,
