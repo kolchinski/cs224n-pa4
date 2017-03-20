@@ -116,7 +116,7 @@ def prepare_dev(prefix, dev_filename, vocab):
     dev_data = data_from_json(os.path.join(prefix, dev_filename))
     context_data, context_tokens, question_data, question_uuid_data = read_dataset(dev_data, 'dev', vocab)
 
-    return context_data, context_tokens, question_data, question_uuid_data
+    return context_data, question_data, context_tokens, question_uuid_data
 
 
 def generate_answers(sess, model, dataset, rev_vocab, context_toks):
