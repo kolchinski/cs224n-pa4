@@ -539,29 +539,25 @@ class QASepSystem(qa_model.QASystem):
 
 
         # Yes, my fellow CS107 TAs will hate this....
-        if len(em_sents):
-            eval_res_file.write("Exact Matches\n")
-            for ques, gold in em_sents[:50]:
-                eval_res_file.write("Ques: " + text(ques) + "\n")
-                eval_res_file.write("Answ: " + gold + "\n")
+        eval_res_file.write("\n###Section: Exact Matches\n")
+        for ques, gold in em_sents[:50]:
+            eval_res_file.write("Ques: " + text(ques) + "\n")
+            eval_res_file.write("Answ: " + gold + "\n")
 
-        if len(empty):
-            eval_res_file.write("Sents where we didn't predict anything\n")
-            for ques, gold in empty[:50]:
-                eval_res_file.write("Ques: " + text(ques) + "\n")
-                eval_res_file.write("Answ: " + gold + "\n")
+        eval_res_file.write("\n###Section: Sents where we didn't predict anything\n")
+        for ques, gold in empty[:50]:
+            eval_res_file.write("Ques: " + text(ques) + "\n")
+            eval_res_file.write("Answ: " + gold + "\n")
 
-        if len(partial_matches):
-            eval_res_file.write("Partial matches\n")
-            for ques, gold, our in partial_matches[:50]:
-                eval_res_file.write("Ques: " + text(ques) + "\n")
-                eval_res_file.write("Answ: " + gold + "\n")
-                eval_res_file.write("OurA: " + our + "\n")
+        eval_res_file.write("\n###Section: Partial matches\n")
+        for ques, gold, our in partial_matches[:50]:
+            eval_res_file.write("Ques: " + text(ques) + "\n")
+            eval_res_file.write("Answ: " + gold + "\n")
+            eval_res_file.write("OurA: " + our + "\n")
 
-        if len(no_match):
-            eval_res_file.write("No matches\n")
-            for ques, gold, our in no_match[:50]:
-                eval_res_file.write("Ques: " + text(ques) + "\n")
-                eval_res_file.write("Answ: " + gold + "\n")
-                eval_res_file.write("OurA: " + our + "\n")
+        eval_res_file.write("\n###Section: No matches\n")
+        for ques, gold, our in no_match[:50]:
+            eval_res_file.write("Ques: " + text(ques) + "\n")
+            eval_res_file.write("Answ: " + gold + "\n")
+            eval_res_file.write("OurA: " + our + "\n")
 
