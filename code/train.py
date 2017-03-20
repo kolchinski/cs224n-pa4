@@ -167,5 +167,11 @@ def print_all_vars():
         var = var
 
 if __name__ == "__main__":
-    tf.app.run()
+    try:
+        tf.app.run()
+    except Exception as e:
+        import traceback
+        logging.error(traceback.format_exc())
+        traceback.print_exc()
+        raise e
 
