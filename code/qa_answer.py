@@ -105,7 +105,7 @@ def read_dataset(dataset, tier, vocab):
                 query_data.append(qustion_ids)
                 question_uuid_data.append(question_uuid)
 
-    return context_data, query_data, question_uuid_data
+    return context_data, context_tokens, query_data, question_uuid_data
 
 
 def prepare_dev(prefix, dev_filename, vocab):
@@ -113,12 +113,12 @@ def prepare_dev(prefix, dev_filename, vocab):
     dev_dataset = maybe_download(squad_base_url, dev_filename, prefix)
 
     dev_data = data_from_json(os.path.join(prefix, dev_filename))
-    context_data, question_data, question_uuid_data = read_dataset(dev_data, 'dev', vocab)
+    context_data, context_tokens, question_data, question_uuid_data = read_dataset(dev_data, 'dev', vocab)
 
-    return context_data, question_data, question_uuid_data
+    return context_data, context_tokens, question_data, question_uuid_data
 
 
-def generate_answers(sess, model, dataset, rev_vocab):
+def generate_answers(sess, model, dataset, rev_vocab, context_toks):
     """
     Loop over the dev or test dataset and generate answer.
 
@@ -137,7 +137,7 @@ def generate_answers(sess, model, dataset, rev_vocab):
     :param rev_vocab: this is a list of vocabulary that maps index to actual words
     :return:
     """
-    return model.gen_test_answers(sess, dataset, rev_vocab)
+    return model.gen_test_answers(sess, dataset, rev_vocab, context_toks)
 
 
 def get_normalized_train_dir(train_dir):
@@ -179,7 +179,7 @@ def main(_):
 
     dev_dirname = os.path.dirname(os.path.abspath(FLAGS.dev_path))
     dev_filename = os.path.basename(FLAGS.dev_path)
-    context_data, question_data, question_uuid_data = prepare_dev(dev_dirname, dev_filename, vocab)
+    context_data, question_data, context_tokens, question_uuid_data = prepare_dev(dev_dirname, dev_filename, vocab)
 
     dataset = {"contexts": context_data, "questions": question_data,
                "q_uuids":question_uuid_data, "vocab": vocab}
@@ -203,7 +203,7 @@ def main(_):
         train_dir = get_normalized_train_dir(FLAGS.train_dir)
         if not is_azure: os.chdir("..")
         initialize_model(sess, qa, train_dir, True)
-        answers = generate_answers(sess, qa, eval_ds, rev_vocab)
+        answers = generate_answers(sess, qa, eval_ds, rev_vocab, context_tokens)
 
         # write to json file to root dir
         with io.open('dev-prediction.json', 'w', encoding='utf-8') as f:

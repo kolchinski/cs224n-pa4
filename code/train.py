@@ -4,6 +4,7 @@ from __future__ import print_function
 
 import os
 import json
+import six
 
 import tensorflow as tf
 
@@ -126,7 +127,10 @@ def main(_):
     import subprocess
     text = "output_dir: " + FLAGS.output_path
     text += "\nLatest Git Commit Info\n"
-    text += subprocess.check_output("git log --name-status HEAD^..HEAD".split())
+    git_info = subprocess.check_output("git log --name-status HEAD^..HEAD".split())
+    if six.PY3:
+        git_info = git_info.encode('utf-8')
+    text += git_info
     print(text)
     logging.info(text)
     with open(os.path.join(FLAGS.log_dir, "git_info"), 'w') as fout:
@@ -142,7 +146,7 @@ def main(_):
         print("Initializing model")
         initialize_model(sess, qa, load_train_dir)
 
-        print_all_vars()
+        # print_all_vars()
         save_train_dir = get_normalized_train_dir(FLAGS.train_dir)
         qa.train(sess, save_train_dir)
 

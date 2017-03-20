@@ -414,7 +414,6 @@ class QASepSystem(qa_model.QASystem):
             uuids.append(uuid)
             seq_lens.append((len(q), len(c)))
 
-        # now we sort the whole thing
         all_qs = list(zip(pad_qs, pad_cs, uuids, seq_lens))
         return all_qs   # don't want to reorder the questions
 
@@ -501,7 +500,7 @@ class QASepSystem(qa_model.QASystem):
 
         return f1, em
 
-    def gen_test_answers(self, session, dataset, vocab):
+    def gen_test_answers(self, session, dataset, vocab, ctx_toks):
         q_vec, ctx_vec, uuids, seq_lens = zip(*dataset)
 
         pred_probs = []
@@ -509,8 +508,10 @@ class QASepSystem(qa_model.QASystem):
             feed_dict = self.prepare_eval_data(zip(*batch))
             pred_probs.extend(session.run([self.results], feed_dict=feed_dict)[0])
 
-        pred_vecs = [sent[start:end +1] for sent, (start, end) in zip(ctx_vec, pred_probs)]
-        pred_sents = [' '.join(vocab[i] for i in vec) for vec in pred_vecs]
+        # pred_vecs = [sent[start:end +1] for sent, (start, end) in zip(ctx_vec, pred_probs)]
+        # pred_sents = [' '.join(vocab[i] for i in vec) for vec in pred_vecs]
+        pred_sents = [' '.join(sent[start:end +1])
+                     for sent, (start, end) in zip(ctx_toks, pred_probs)]
 
         return dict(zip(uuids, pred_sents))
 
