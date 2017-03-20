@@ -80,7 +80,11 @@ class QASystem(object):
             loss = self.train_on_batch(sess, zip(*batch))
             losses.append(loss)
             prog.update(i + 1, [("train loss", loss)])
-        f1, em = self.evaluate_answer(sess, log=True)
+
+        logging.info("Evaluation on training data")
+        self.evaluate_answer(sess, self.train_qas, log=True)
+        logging.info("Evaluation on dev data")
+        f1, em = self.evaluate_answer(sess, self.dev_qas, log=True)
 
         return f1
 

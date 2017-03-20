@@ -136,7 +136,7 @@ def main(_):
         qa.train(sess, save_train_dir)
 
         print("Evaluating answer")
-        qa.evaluate_answer(sess, dataset['vocab'], FLAGS.evaluate, log=True)
+        # qa.evaluate_answer(sess, dataset['vocab'], FLAGS.evaluate, log=True)
 
 
 def load_dataset(data_dir):
