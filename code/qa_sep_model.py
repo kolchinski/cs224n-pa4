@@ -480,7 +480,8 @@ class QASepSystem(qa_model.QASystem):
             logging.info("Precision: {}, Recall: {}; {} total words predicted\n".format(
                 np.mean(precisions), np.mean(recalls), np.sum(pred_spans)))
 
-            if self.epoch % 5 == 1:
+            # if self.epoch % 5 == 1:
+            if dataset is self.dev_qas:  # bad hack
                 self.eval_res_file.write("\n\nEpoch {}:".format(self.epoch))
                 self.extended_log(self.vocab, self.eval_res_file, q_vec, gold_s, pred_s, ems, f1s)
 
@@ -539,29 +540,28 @@ class QASepSystem(qa_model.QASystem):
 
         # Yes, my fellow CS107 TAs will hate this....
         if len(em_sents):
-            eval_res_file.write("Sample Exact Matches")
-            for ques, gold in em_sents[:5]:
-                eval_res_file.write("Ques: " + text(ques))
-                eval_res_file.write("Answ: " + gold)
+            eval_res_file.write("Exact Matches\n")
+            for ques, gold in em_sents[:50]:
+                eval_res_file.write("Ques: " + text(ques) + "\n")
+                eval_res_file.write("Answ: " + gold + "\n")
 
         if len(empty):
-            eval_res_file.write("Sents where we didn't predict anything")
-            for ques, gold in empty[:5]:
-                eval_res_file.write("Ques: " + text(ques))
-                eval_res_file.write("Answ: " + gold)
+            eval_res_file.write("Sents where we didn't predict anything\n")
+            for ques, gold in empty[:50]:
+                eval_res_file.write("Ques: " + text(ques) + "\n")
+                eval_res_file.write("Answ: " + gold + "\n")
 
         if len(partial_matches):
-            eval_res_file.write("Partial matches")
-            for ques, gold, our in partial_matches[:5]:
-                eval_res_file.write("Ques: " + text(ques))
-                eval_res_file.write("Answ: " + gold)
-                eval_res_file.write("OurA: " + our)
+            eval_res_file.write("Partial matches\n")
+            for ques, gold, our in partial_matches[:50]:
+                eval_res_file.write("Ques: " + text(ques) + "\n")
+                eval_res_file.write("Answ: " + gold + "\n")
+                eval_res_file.write("OurA: " + our + "\n")
 
         if len(no_match):
-            eval_res_file.write("Partial matches")
-            for ques, gold, our in no_match[:5]:
-                eval_res_file.write("Ques: " + text(ques))
-                eval_res_file.write("Answ: " + gold)
-                eval_res_file.write("OurA: " + our)
-
+            eval_res_file.write("No matches\n")
+            for ques, gold, our in no_match[:50]:
+                eval_res_file.write("Ques: " + text(ques) + "\n")
+                eval_res_file.write("Answ: " + gold + "\n")
+                eval_res_file.write("OurA: " + our + "\n")
 
