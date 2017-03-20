@@ -205,8 +205,7 @@ def main(_):
         train_dir = get_normalized_train_dir(FLAGS.train_dir)
         #if not is_azure: os.chdir("..")
         initialize_model(sess, qa, train_dir, True)
-        answers = qa.gen_test_answers(sess, dataset, rev_vocab, context_tokens)
-        # answers = generate_answers(sess, qa, eval_ds, rev_vocab, context_tokens)
+        answers = qa.gen_test_answers(sess, eval_ds, rev_vocab, context_tokens)
 
         print(os.listdir('.'))
         print(os.getcwd())
