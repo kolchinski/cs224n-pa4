@@ -42,12 +42,13 @@ tf.app.flags.DEFINE_string("is_prod", is_azure, "Adjust batch size and num of ep
 
 
 def initialize_model(session, model, train_dir, is_eval=False):
-    ckpt = tf.train.get_checkpoint_state(train_dir + "/best/best/")
+    ckpt = tf.train.get_checkpoint_state(train_dir + "/best/")
     v2_path = ckpt.model_checkpoint_path + ".index" if ckpt else ""
     if ckpt and (tf.gfile.Exists(ckpt.model_checkpoint_path) or tf.gfile.Exists(v2_path)):
         logging.info("Reading model parameters from %s" % ckpt.model_checkpoint_path)
+        #logging.info("Current dir {}".format(os.listdir('./tmp/')))
         #model.saver.restore(session, ckpt.model_checkpoint_path)
-        model.saver.restore(session, './train/best/')
+        model.saver.restore(session, '../tmp/cs224n-squad-train/best/')
     else:
         if is_eval:
             raise Exception("Couldn't find model parameters for eval. ckpt: {}")
@@ -201,9 +202,13 @@ def main(_):
 
     with tf.Session() as sess:
         train_dir = get_normalized_train_dir(FLAGS.train_dir)
-        if not is_azure: os.chdir("..")
+        #if not is_azure: os.chdir("..")
         initialize_model(sess, qa, train_dir, True)
         answers = generate_answers(sess, qa, eval_ds, rev_vocab)
+
+	print(os.listdir('.'))
+	print(os.getcwd())
+	print(os.path.abspath('.'))
 
         # write to json file to root dir
         with io.open('dev-prediction.json', 'w', encoding='utf-8') as f:
