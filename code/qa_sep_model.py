@@ -130,7 +130,7 @@ class NaiveCoDecoder(object):
                 swap_memory=True)
 
             w_s = tf.get_variable("W_s", (self.hidden_size, 1), tf.float32, xav_init)
-            tf.summary.histogram("decode start weight", w_s)
+            tf.summary.histogram("decode_start_weight", w_s)
             b_s = tf.get_variable("b_s", (1,), tf.float32, tf.constant_initializer(0.0))
             s_h_flat = tf.reshape(s_h, [-1, self.hidden_size])
             inner = tf.matmul(s_h_flat, w_s) + b_s
@@ -147,7 +147,7 @@ class NaiveCoDecoder(object):
                 swap_memory=True)
 
             w_e = tf.get_variable("W_e", (self.hidden_size, 1), tf.float32, xav_init)
-            tf.summary.histogram("end decode weight", w_e)
+            tf.summary.histogram("end_decode_weight", w_e)
             b_e = tf.get_variable("b_e", (1,), tf.float32, tf.constant_initializer(0.0))
             e_h = tf.reshape(e_h, [-1, self.hidden_size])
             inner = tf.matmul(e_h, w_e) + b_e
@@ -448,7 +448,7 @@ class QASepSystem(qa_model.QASystem):
         feed_dict = self.prepare_data(batch_data, dropout=FLAGS.dropout)
 
         if not (self.batch_num % (2048 // FLAGS.batch_size * 5)):
-            [s] = session.run(sum, feed_dict=feed_dict)
+            [s] = session.run([self.summ], feed_dict=feed_dict)
             self.writer.add_summary(s, self.batch_num)
         self.batch_num += 1
         _, l = session.run([self.train_op, self.loss], feed_dict=feed_dict)
