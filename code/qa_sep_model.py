@@ -349,7 +349,7 @@ class QASepSystem(qa_model.QASystem):
         """
         final_res: originally B x context_len x 2 tensor
         """
-        with vs.variable_scope("Loss Calculation"):
+        with vs.variable_scope("Loss_Calculation"):
             ce_wl = tf.nn.sparse_softmax_cross_entropy_with_logits
             start_labels, end_labels = tf.unpack(self.labels_placeholder, axis=1)
             self.start_preds = tf.nn.softmax(final_res[0])
