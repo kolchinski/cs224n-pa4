@@ -552,8 +552,8 @@ class QASepSystem(qa_model.QASystem):
         return dict(zip(uuids, pred_sents))
 
     def build_pred_probs(self, start_probs, end_probs, candidates=10, max_len=30):
-        max_starts = list(sorted(enumerate(start_probs), key=lambda s: s[1]))
-        max_ends = list(sorted(enumerate(end_probs), key=lambda s: s[1]))
+        max_starts = list(sorted(enumerate(start_probs), key=lambda s: s[1], reverse=True))
+        max_ends = list(sorted(enumerate(end_probs), key=lambda s: s[1], reverse=True))
 
         cur_max = (0, 0)
         cur_max_prob = 0
@@ -566,7 +566,7 @@ class QASepSystem(qa_model.QASystem):
                     continue
                 cur_prob = start_prob * end_prob
                 if text_length > 10:  # to discourage long answers
-                    cur_prob *= 1 - ((text_length-10)/max_len)
+                    cur_prob *= (1 - ((text_length-10)/max_len))
                 if cur_prob > cur_max_prob:
                     cur_max_prob = cur_prob
                     cur_max = (start_indx, end_indx)
