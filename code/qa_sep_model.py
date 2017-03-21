@@ -535,17 +535,43 @@ class QASepSystem(qa_model.QASystem):
     def gen_test_answers(self, session, dataset, vocab, ctx_toks):
         q_vec, ctx_vec, uuids, seq_lens = zip(*dataset)
 
-        pred_probs = []
+        # pred_probs = []
+        start_preds, end_preds = [], []
         for batch in self.build_batches(dataset, shuffle=False):
             feed_dict = self.prepare_eval_data(zip(*batch))
-            pred_probs.extend(session.run([self.results], feed_dict=feed_dict)[0])
+            start_p, end_p = session.run([self.results], feed_dict=feed_dict)
+            start_preds.extend(start_p)
+            end_preds.extend(end_p)
 
+        pred_probs = [self.build_pred_probs(s, e) for s, e in zip(start_preds, end_preds)]
         # pred_vecs = [sent[start:end +1] for sent, (start, end) in zip(ctx_vec, pred_probs)]
         # pred_sents = [' '.join(vocab[i] for i in vec) for vec in pred_vecs]
         pred_sents = [' '.join(sent[start:end +1])
                      for sent, (start, end) in zip(ctx_toks, pred_probs)]
 
         return dict(zip(uuids, pred_sents))
+
+    def build_pred_probs(self, start_probs, end_probs, candidates=10, max_len=30):
+        max_starts = list(sorted(enumerate(start_probs), key=lambda s: s[1]))
+        max_ends = list(sorted(enumerate(end_probs), key=lambda s: s[1]))
+
+        cur_max = (0, 0)
+        cur_max_prob = 0
+        for start_indx, start_prob in max_starts[:candidates]:
+            for end_indx, end_prob in max_ends[:candidates]:
+                text_length = (end_indx + 1) - start_indx
+                if text_length < 1:
+                    continue
+                if text_length > max_len:
+                    continue
+                cur_prob = start_prob * end_prob
+                if text_length > 10:  # to discourage long answers
+                    cur_prob *= 1 - ((text_length-10)/max_len)
+                if cur_prob > cur_max_prob:
+                    cur_max_prob = cur_prob
+                    cur_max = (start_indx, end_indx)
+
+        return cur_max
 
     def prepare_eval_data(self, data, dropout=0):
         q_batch, ctx_batch, uuids, context_spans_batch = data
