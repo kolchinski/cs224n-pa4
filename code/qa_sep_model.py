@@ -558,6 +558,7 @@ class QASepSystem(qa_model.QASystem):
         max_starts = list(sorted(enumerate(start_probs), key=lambda s: s[1], reverse=True))
         max_ends = list(sorted(enumerate(end_probs), key=lambda s: s[1], reverse=True))
 
+        min_penalty_len = 6
         cur_max = (0, 0)
         cur_max_prob = 0
         for start_indx, start_prob in max_starts[:candidates]:
@@ -568,8 +569,8 @@ class QASepSystem(qa_model.QASystem):
                 if text_length > max_len:
                     continue
                 cur_prob = start_prob * end_prob
-                if text_length > 10:  # to discourage long answers
-                    cur_prob *= (1 - ((text_length-10)/max_len))
+                if text_length >= min_penalty_len:  # to discourage long answers
+                    cur_prob *= (min_penalty_len / text_length)
                 if cur_prob > cur_max_prob:
                     cur_max_prob = cur_prob
                     cur_max = (start_indx, end_indx)
