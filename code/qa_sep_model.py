@@ -37,7 +37,7 @@ class CoEncoder(object):
         cell = tf.nn.rnn_cell.DropoutWrapper(cell, output_keep_prob = 1.0 - dropout)
 
         # Run the first LSTM on the questions
-        with tf.variable_scope("Initial_Encoder_LSTM") as scope:
+        with tf.variable_scope("encoder") as scope:
             xav_init = tf.contrib.layers.xavier_initializer()
             w_q = tf.get_variable("W_q", (hidden_size,hidden_size), tf.float32, xav_init)
             b_q = tf.get_variable("b_q", (hidden_size), tf.float32, xav_init)
@@ -76,7 +76,6 @@ class CoEncoder(object):
 
             # Now, to calculate the coattention matrix etc
 
-        with tf.variable_scope("CoAttention_Layer"):
             l = tf.matmul(doc, tf.transpose(q, perm=[0,2,1])) #shape: BxC+1xQ+1
 
             # for each context position, weights for corresponding question positions
@@ -93,7 +92,7 @@ class CoEncoder(object):
 
             DCd = tf.concat(2, [doc, Cd])
 
-        with tf.variable_scope("Final_Encode_BiLSTM"):
+        with tf.variable_scope("encoder2") as scope:
             # Also concat with raw c representation like in github?
             # we stop when we hit the last index and output a 0 - is that cool?
             outputs, states = tf.nn.bidirectional_dynamic_rnn(
@@ -122,38 +121,37 @@ class NaiveCoDecoder(object):
         cell = tf.nn.rnn_cell.DropoutWrapper(cell, output_keep_prob = 1.0 - dropout)
         xav_init = tf.contrib.layers.xavier_initializer()
 
+
         # Decoder for start positions
-        with vs.variable_scope("Start_Token_Decoder"):
+        with vs.variable_scope("start_decoder"):
             s_h, s_h_state = tf.nn.dynamic_rnn(
                 cell=cell, inputs=inputs,
                 sequence_length=lengths, dtype=tf.float32,
                 swap_memory=True)
 
-            with vs.variable_scope("Simple_NN"):
-                w_s = tf.get_variable("W_s", (self.hidden_size, 1), tf.float32, xav_init)
-                tf.summary.histogram("decode_start_weight", w_s)
-                b_s = tf.get_variable("b_s", (1,), tf.float32, tf.constant_initializer(0.0))
-                s_h_flat = tf.reshape(s_h, [-1, self.hidden_size])
-                inner = tf.matmul(s_h_flat, w_s) + b_s
-                inner = tf.reshape(inner, [-1, c_len])
+            w_s = tf.get_variable("W_s", (self.hidden_size, 1), tf.float32, xav_init)
+            tf.summary.histogram("decode_start_weight", w_s)
+            b_s = tf.get_variable("b_s", (1,), tf.float32, tf.constant_initializer(0.0))
+            s_h_flat = tf.reshape(s_h, [-1, self.hidden_size])
+            inner = tf.matmul(s_h_flat, w_s) + b_s
+            inner = tf.reshape(inner, [-1, c_len])
             # start_probs = tf.nn.softmax(inner)
             start_probs = inner
             self.nai_start_probs = start_probs
 
         # Decoder for end positions
-        with vs.variable_scope("End_Token_Decoder"):
+        with vs.variable_scope("end_decoder"):
             e_h, _ = tf.nn.dynamic_rnn(
                 cell=cell, inputs=inputs,
                 sequence_length=lengths, dtype=tf.float32,
                 swap_memory=True)
 
-            with vs.variable_scope("Simple_NN"):
-                w_e = tf.get_variable("W_e", (self.hidden_size, 1), tf.float32, xav_init)
-                tf.summary.histogram("end_decode_weight", w_e)
-                b_e = tf.get_variable("b_e", (1,), tf.float32, tf.constant_initializer(0.0))
-                e_h = tf.reshape(e_h, [-1, self.hidden_size])
-                inner = tf.matmul(e_h, w_e) + b_e
-                inner = tf.reshape(inner, [-1, c_len])
+            w_e = tf.get_variable("W_e", (self.hidden_size, 1), tf.float32, xav_init)
+            tf.summary.histogram("end_decode_weight", w_e)
+            b_e = tf.get_variable("b_e", (1,), tf.float32, tf.constant_initializer(0.0))
+            e_h = tf.reshape(e_h, [-1, self.hidden_size])
+            inner = tf.matmul(e_h, w_e) + b_e
+            inner = tf.reshape(inner, [-1, c_len])
             end_probs = inner
             self.nai_end_probs = end_probs
 
@@ -288,8 +286,8 @@ class QASepSystem(qa_model.QASystem):
     def build_pipeline(self):
         self.encoder = CoEncoder(self.hidden_size, self.in_size,
                                        self.max_c_len, self.max_q_len)
-        # self.decoder = GlobalAttentionCoDecoder(self.hidden_size)
-        self.decoder = NaiveCoDecoder(self.hidden_size)
+        self.decoder = GlobalAttentionCoDecoder(self.hidden_size)
+        #self.decoder = NaiveCoDecoder(self.hidden_size)
 
 
         self.q_placeholder = tf.placeholder(tf.int32, (None, self.max_q_len))
@@ -307,7 +305,7 @@ class QASepSystem(qa_model.QASystem):
         self.dropout_placeholder = tf.placeholder(tf.float32, ())  # Proportion of connections to drop
         self.learn_r_placeholder = tf.placeholder_with_default(FLAGS.learning_rate, ())
 
-        with tf.variable_scope("QA_Predictor", initializer=tf.uniform_unit_scaling_initializer(1.0)):
+        with tf.variable_scope("qa", initializer=tf.uniform_unit_scaling_initializer(1.0)):
             embeds = self.setup_embeddings()
             decode_res = self.setup_system(embeds)
             final_res = tf.stack(decode_res, axis=2)
@@ -329,11 +327,10 @@ class QASepSystem(qa_model.QASystem):
         with open(embed_path, "rb") as f:
             self.pretrained_embeddings = np.load(f)['glove']
 
-        with tf.variable_scope("Embeddings"):
-            # We now need to set up the tensorflow emedding
-            embed = tf.Variable(self.pretrained_embeddings, dtype=tf.float32)
-            q_embed = tf.nn.embedding_lookup(embed, self.q_placeholder)
-            ctx_embed = tf.nn.embedding_lookup(embed, self.ctx_placeholder)
+        # We now need to set up the tensorflow emedding
+        embed = tf.Variable(self.pretrained_embeddings, dtype=tf.float32)
+        q_embed = tf.nn.embedding_lookup(embed, self.q_placeholder)
+        ctx_embed = tf.nn.embedding_lookup(embed, self.ctx_placeholder)
 
         return {"q": q_embed, "ctx": ctx_embed}
 
@@ -349,7 +346,7 @@ class QASepSystem(qa_model.QASystem):
         """
         final_res: originally B x context_len x 2 tensor
         """
-        with vs.variable_scope("Loss_Calculation"):
+        with vs.variable_scope("loss"):
             ce_wl = tf.nn.sparse_softmax_cross_entropy_with_logits
             start_labels, end_labels = tf.unpack(self.labels_placeholder, axis=1)
             self.start_preds = tf.nn.softmax(final_res[0])
