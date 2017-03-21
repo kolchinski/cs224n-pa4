@@ -286,8 +286,8 @@ class QASepSystem(qa_model.QASystem):
     def build_pipeline(self):
         self.encoder = CoEncoder(self.hidden_size, self.in_size,
                                        self.max_c_len, self.max_q_len)
-        self.decoder = GlobalAttentionCoDecoder(self.hidden_size)
-        #self.decoder = NaiveCoDecoder(self.hidden_size)
+        #self.decoder = GlobalAttentionCoDecoder(self.hidden_size)
+        self.decoder = NaiveCoDecoder(self.hidden_size)
 
 
         self.q_placeholder = tf.placeholder(tf.int32, (None, self.max_q_len))
