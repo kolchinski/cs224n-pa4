@@ -539,7 +539,7 @@ class QASepSystem(qa_model.QASystem):
         start_preds, end_preds = [], []
         for batch in self.build_batches(dataset, shuffle=False):
             feed_dict = self.prepare_eval_data(zip(*batch))
-            start_p, end_p = session.run([self.results], feed_dict=feed_dict)
+            start_p, end_p = session.run([self.start_preds, self.end_preds], feed_dict=feed_dict)
             start_preds.extend(start_p)
             end_preds.extend(end_p)
 
