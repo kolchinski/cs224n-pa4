@@ -5,6 +5,8 @@ from scipy.stats import norm
 from scipy.stats import gaussian_kde
 import seaborn as sns
 
+import pandas as pd
+
 
 loaded = np.load('best_epoch.npz') 
 s = loaded['start_probs']
@@ -16,7 +18,7 @@ l = s.shape[1]
 
 
 starts = np.argmax(s, axis=1)
-ends   = np.argmax(e, axis=1)
+ends = np.argmax(e, axis=1)
 pred_lengths = ends - starts + 1
 x = pred_lengths = np.clip(pred_lengths, 0, None)
 y = true_lengths = g[:,1] - g[:,0] + 1
@@ -46,6 +48,12 @@ plt.colorbar(tmp)
 #plt.plot(np.unique(x), np.poly1d(np.polyfit(x, y, 1))(np.unique(x)), 'r-')
 plt.show()
 '''
+
+lengths_corr = pd.DataFrame()
+
+
+
+
 
 bins = np.linspace(0, 1, 20)
 topStartProbs = np.max(s, axis=1)
