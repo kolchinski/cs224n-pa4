@@ -1,0 +1,114 @@
+output_dir: results/20170320_225002/
+Latest Git Commit Info
+commit c7e9655e586e30a10d34c799048b8534f4ec2a0a
+Author: John Clow <johnwclow@hotmail.com>
+Date:   Mon Mar 20 15:45:39 2017 -0700
+
+    Changed use of log dir to output path so that we don't lose results.
+
+M	code/qa_sep_model.py
+M	code/train.py
+
+Created model with fresh parameters.
+Num params: 17178202
+Number of params: 17178202 (retrieval took 1.354255 secs)
+Epoch 1 out of 350
+Evaluation on training data
+F1: 0.186819433392, EM: 0.1145, for 2000 samples
+Precision: 0.193086503699, Recall: 0.310739655552; 24756 total words predicted
+
+Evaluation on dev data
+F1: 0.16652724422, EM: 0.0965, for 2000 samples
+Precision: 0.176895118088, Recall: 0.28844133769; 26623 total words predicted
+
+Epoch 2 out of 350
+Evaluation on training data
+F1: 0.411354676229, EM: 0.2945, for 2000 samples
+Precision: 0.440464178474, Recall: 0.497435173481; 14485 total words predicted
+
+Evaluation on dev data
+F1: 0.363447035022, EM: 0.253, for 2000 samples
+Precision: 0.388962734384, Recall: 0.452572623958; 16923 total words predicted
+
+Epoch 3 out of 350
+Evaluation on training data
+F1: 0.668298204828, EM: 0.5265, for 2000 samples
+Precision: 0.705973687233, Recall: 0.713018496574; 8871 total words predicted
+
+Evaluation on dev data
+F1: 0.553444892334, EM: 0.408, for 2000 samples
+Precision: 0.584014042896, Recall: 0.610297202743; 9074 total words predicted
+
+Epoch 4 out of 350
+Evaluation on training data
+F1: 0.741277908855, EM: 0.604, for 2000 samples
+Precision: 0.784014563157, Recall: 0.773971742819; 7421 total words predicted
+
+Evaluation on dev data
+F1: 0.609705126484, EM: 0.4695, for 2000 samples
+Precision: 0.645478564321, Recall: 0.652392578852; 8558 total words predicted
+
+Epoch 5 out of 350
+Evaluation on training data
+F1: 0.777073863751, EM: 0.637, for 2000 samples
+Precision: 0.809722502149, Recall: 0.816803015051; 8850 total words predicted
+
+Evaluation on dev data
+F1: 0.61452395095, EM: 0.4705, for 2000 samples
+Precision: 0.649053767752, Recall: 0.665991475048; 9674 total words predicted
+
+Epoch 6 out of 350
+Evaluation on training data
+F1: 0.831414786552, EM: 0.692, for 2000 samples
+Precision: 0.871368240187, Recall: 0.861143916683; 7535 total words predicted
+
+Evaluation on dev data
+F1: 0.608663716723, EM: 0.4565, for 2000 samples
+Precision: 0.634060591881, Recall: 0.663562267701; 9420 total words predicted
+
+Epoch 7 out of 350
+Evaluation on training data
+F1: 0.852714433705, EM: 0.7355, for 2000 samples
+Precision: 0.892153999906, Recall: 0.870519112219; 7318 total words predicted
+
+Evaluation on dev data
+F1: 0.612972738903, EM: 0.4715, for 2000 samples
+Precision: 0.642962027447, Recall: 0.663309875524; 8569 total words predicted
+
+Epoch 8 out of 350
+Evaluation on training data
+F1: 0.888100112484, EM: 0.766, for 2000 samples
+Precision: 0.923839486994, Recall: 0.901795603765; 6672 total words predicted
+
+Evaluation on dev data
+F1: 0.598230027756, EM: 0.455, for 2000 samples
+Precision: 0.62538627899, Recall: 0.645144306888; 8604 total words predicted
+
+Epoch 9 out of 350
+Evaluation on training data
+F1: 0.894660591867, EM: 0.784, for 2000 samples
+Precision: 0.933773521816, Recall: 0.903290037951; 6640 total words predicted
+
+Evaluation on dev data
+F1: 0.603832888035, EM: 0.464, for 2000 samples
+Precision: 0.638277203259, Recall: 0.642014102116; 8874 total words predicted
+
+Epoch 10 out of 350
+Evaluation on training data
+F1: 0.907540993245, EM: 0.807, for 2000 samples
+Precision: 0.944912427376, Recall: 0.91526131725; 6704 total words predicted
+
+Evaluation on dev data
+F1: 0.590919671814, EM: 0.4485, for 2000 samples
+Precision: 0.622757107465, Recall: 0.631383781537; 8351 total words predicted
+
+Epoch 11 out of 350
+Evaluation on training data
+F1: 0.925795882002, EM: 0.833, for 2000 samples
+Precision: 0.944586941218, Recall: 0.939180437992; 6518 total words predicted
+
+Evaluation on dev data
+F1: 0.58679538621, EM: 0.443, for 2000 samples
+Precision: 0.615400513017, Recall: 0.629106385905; 8477 total words predicted
+
+Epoch 12 out of 350
