@@ -192,7 +192,7 @@ def main(_):
 
         # write to json file to root dir
         with io.open('dev-prediction.json', 'w', encoding='utf-8') as f:
-            f.write(six.text_type(json.dumps(answers, ensure_ascii=False)))
+            f.write(six.text_type(json.dumps(answers, ensure_ascii=False, indent=2)))
 
 
 if __name__ == "__main__":
